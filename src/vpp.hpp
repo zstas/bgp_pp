@@ -11,9 +11,6 @@ struct vpp_api {
     vpp_api();
     ~vpp_api();
 
-    bool attach_application();
-    int32_t bind( uint16_t port );
-    int32_t accept();
 };
 
 #endif

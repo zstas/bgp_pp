@@ -31,18 +31,12 @@ using namespace std::string_literals;
 #include "fsm.hpp"
 #include "table.hpp"
 #include "vpp.hpp"
-#include "vppcom_socket.hpp"
 
 struct main_loop {
     // asio
     io_context io;
     acceptor accpt;
     socket_tcp sock;
-
-    // vpp
-    vppcom_service vpp_io;
-    vppcom_listener vpp_accpt;
-    vppcom_session vpp_sock;
 
     global_conf &conf;
     bgp_table_v4 table;
