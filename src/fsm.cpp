@@ -1,6 +1,22 @@
-#include "main.hpp"
+#include <memory>
+#include <vector>
+#include <tuple>
+#include <boost/asio/ip/network_v4.hpp>
+#include <boost/asio/posix/stream_descriptor.hpp>
 
-bgp_fsm::bgp_fsm( io_context &io,  global_conf &g, bgp_neighbour_v4 &c ):
+using address_v4 = boost::asio::ip::address_v4;
+using prefix_v4 = boost::asio::ip::network_v4;
+
+#include "fsm.hpp"
+#include "config.hpp"
+#include "utils.hpp"
+#include "packet.hpp"
+#include "log.hpp"
+#include "string_utils.hpp"
+
+extern Logger logger;
+
+bgp_fsm::bgp_fsm( io_context &io,  GlobalConf &g, bgp_neighbour_v4 &c ):
     state( FSM_STATE::IDLE ),
     gconf( g ),
     conf( c ),
@@ -17,7 +33,7 @@ bgp_fsm::bgp_fsm( io_context &io,  global_conf &g, bgp_neighbour_v4 &c ):
 void bgp_fsm::place_connection( socket_tcp s ) {
     sock.emplace( std::move( s ) );
     auto const &endpoint = sock->remote_endpoint();
-    log( "Incoming connection: "s + endpoint.address().to_string() + " "s + std::to_string( endpoint.port() ) );
+    logger.logInfo() << LOGS::FSM << "Incoming connection: " << endpoint.address().to_string() << ":" << endpoint.port() << std::endl;
     do_read();
     tx_open();
 }
@@ -28,12 +44,12 @@ void bgp_fsm::start_keepalive_timer() {
 }
 
 void bgp_fsm::on_keepalive_timer( error_code ec ) {
-    log( "Periodic KEEPALIVE" );
+    logger.logInfo() << LOGS::FSM << "Periodic KEEPALIVE" << std::endl;
     if( sock.has_value() ) {
         tx_keepalive();
         start_keepalive_timer();
     } else {
-        log( "Lost connection" );
+        logger.logInfo() << LOGS::FSM << "Lost connection" << std::endl;
         // todo change state
     }
 }
@@ -41,25 +57,23 @@ void bgp_fsm::on_keepalive_timer( error_code ec ) {
 void bgp_fsm::rx_open( bgp_packet &pkt ) {
     auto open = pkt.get_open();
     if( !sock.has_value() ) {
-        log( "Cannot acquire connection" );
+        logger.logInfo() << LOGS::FSM << "Cannot acquire connection" << std::endl;
         // todo: do something!
         return;
     }
 
-    log( "Incoming OPEN packet from: "s + sock->remote_endpoint().address().to_string() );
-    log( "BGP version: "s + std::to_string( open->version ) );
-    log( "Router ID: "s + address_v4( bswap32( open->bgp_id ) ).to_string() );
-    log( "Hold time: "s + std::to_string( bswap16( open->hold_time ) ) );
+    logger.logInfo() << LOGS::FSM << "Incoming OPEN packet from: " << sock->remote_endpoint().address().to_string() << std::endl;
+    logger.logInfo() << LOGS::PACKET << open << std::endl;
 
     if( bswap16( open->my_as ) != conf.remote_as ) {
-        log( "Incorrect AS: "s + std::to_string( bswap16( open->my_as ) ) + ", we expected: "s + std::to_string( conf.remote_as ) );
+        logger.logError() << LOGS::FSM << "Incorrect AS: " << bswap16( open->my_as ) << ", we expected: " << conf.remote_as << std::endl;
         sock->close();
         return;
     }
 
     HoldTime = std::min( bswap16( open->hold_time ), HoldTime );
     KeepaliveTime = HoldTime / 3;
-    log( "Negotiated timers - hold_time: "s + std::to_string( HoldTime ) + " keepalive_time: "s + std::to_string( KeepaliveTime ) );
+    logger.logInfo() << LOGS::FSM << "Negotiated timers - hold_time: " << HoldTime << " keepalive_time: " << KeepaliveTime << std::endl;
 
     tx_keepalive();
     state = FSM_STATE::OPENCONFIRM;
@@ -67,7 +81,7 @@ void bgp_fsm::rx_open( bgp_packet &pkt ) {
 
 void bgp_fsm::tx_open() {
     if( !sock.has_value() ) {
-        log( "Cannot acquire connection" );
+        logger.logError() << LOGS::FSM << "Cannot acquire connection" << std::endl;
         // todo: do something!
         return;
     }
@@ -102,20 +116,20 @@ void bgp_fsm::tx_open() {
 
 void bgp_fsm::on_send( std::shared_ptr<std::vector<uint8_t>> pkt, error_code ec, std::size_t length ) {
     if( ec ) {
-        log( "Error on sending packet: "s + ec.message() );
+        logger.logError() << LOGS::FSM << "Error on sending packet: " << ec.message() << std::endl;
         return;
     }
-    log( "Successfully sent a message with size: "s + std::to_string( length ) );
+    logger.logInfo() << LOGS::FSM << "Successfully sent a message with size: " << length << std::endl;
 }
 
 void bgp_fsm::tx_keepalive() {
     if( !sock.has_value() ) {
-        log( "Cannot acquire connection" );
+        logger.logError() << LOGS::FSM << "Cannot acquire connection" << std::endl;
         // todo: do something!
         return;
     }
 
-    log( "Sending KEEPALIVE to peer: "s + sock->remote_endpoint().address().to_string() );
+    logger.logInfo() << LOGS::FSM << "Sending KEEPALIVE to peer: " << sock->remote_endpoint().address().to_string() << std::endl;
     auto len = sizeof( bgp_header );
     auto pkt_buf = std::make_shared<std::vector<uint8_t>>();
     pkt_buf->resize( len );
@@ -133,65 +147,63 @@ void bgp_fsm::tx_keepalive() {
 
 void bgp_fsm::rx_keepalive( bgp_packet &pkt ) {
     if( !sock.has_value() ) {
-        log( "Cannot acquire connection" );
+        logger.logError() << LOGS::FSM << "Cannot acquire connection" << std::endl;
         // todo: do something!
         return;
     }
 
     if( state == FSM_STATE::OPENCONFIRM || state == FSM_STATE::OPENSENT ) {
-        log( "BGP goes to ESTABLISHED state with peer: "s + sock->remote_endpoint().address().to_string() );
+        logger.logError() << LOGS::FSM << "BGP goes to ESTABLISHED state with peer: " << sock->remote_endpoint().address().to_string() << std::endl;
         state = FSM_STATE::ESTABLISHED;
         start_keepalive_timer();
     } else if( state != FSM_STATE::ESTABLISHED ) {
-        log( "Received a KEEPALIVE in incorrect state, closing connection" );
+        logger.logError() << LOGS::FSM << "Received a KEEPALIVE in incorrect state, closing connection" << std::endl;
         sock->close();
     }
-    log( "Received a KEEPALIVE message" );
+    logger.logInfo() << LOGS::FSM << "Received a KEEPALIVE message" << std::endl;
 }
 
 void bgp_fsm::rx_update( bgp_packet &pkt ) {
     auto [ withdrawn_routes, path_attrs, routes ] = pkt.process_update();
-    log(    "Received UPDATE message with withdrawn routes, paths and routes: "s + 
-            std::to_string( withdrawn_routes.size() ) + " "s + 
-            std::to_string( path_attrs.size() ) + " "s + 
-            std::to_string( routes.size() ) );
+    logger.logInfo() << LOGS::FSM << "Received UPDATE message with withdrawn routes " << withdrawn_routes.size()
+    << ", paths: " << path_attrs.size() << " and routes: " << routes.size() << std::endl;
 
     for( auto &wroute: withdrawn_routes ) {
-        log( "Received withdrawn route: "s + wroute.to_string() );
+        logger.logInfo() << LOGS::FSM << "Received withdrawn route: " << wroute << std::endl;
         //table.del_path();
     }
 
     for( auto &route: routes ) {
-        log( "Received route: "s + route.to_string() );
+        logger.logInfo() << LOGS::FSM << "Received route: " << route << std::endl;
         table.add_path( route, path_attrs );
     }
 
-    log( "After update we have BGP table: " );
+    logger.logInfo() << LOGS::FSM << "After update we have BGP table: " << std::endl;
     for( auto const &[ k, v ]: table.table ) {
-        log( "Route: "s + k.to_string() );
+        logger.logInfo() << LOGS::FSM << "Route: " << k.to_string();
         for( auto path: v ) {
-            log( "Path: "s + path.to_string() );
+            logger.logInfo() << LOGS::FSM << "Path: " << path << std::endl;
         }
     }
 }
 
 void bgp_fsm::on_receive( error_code ec, std::size_t length ) {
     if( ec ) {
-        log( "Error on receiving data: "s + ec.message() );
+        logger.logError() << LOGS::FSM << "Error on receiving data: " << ec.message() << std::endl;
         return;
     }
 
     if( !sock.has_value() ) {
-        log( "Cannot acquire connection" );
+        logger.logError() << LOGS::FSM << "Cannot acquire connection" << std::endl;
         // todo: do something!
         return;
     }
 
-    log( "Received message of size: "s + std::to_string( length ) );
+    logger.logInfo() << LOGS::FSM << "Received message of size: " << length << std::endl;
     bgp_packet pkt { buffer.begin(), length };
     auto bgp_header = pkt.get_header();
     if( std::any_of( bgp_header->marker.begin(), bgp_header->marker.end(), []( uint8_t el ) { return el != 0xFF; } ) ) {
-        log( "Wrong BGP marker in header!" );
+        logger.logInfo() << LOGS::FSM << "Wrong BGP marker in header!" << std::endl;
         return;
     }
     switch( bgp_header->type ) {
@@ -205,10 +217,10 @@ void bgp_fsm::on_receive( error_code ec, std::size_t length ) {
         rx_update( pkt );
         break;
     case bgp_type::NOTIFICATION:
-        log( "NOTIFICATION message" );
+        logger.logInfo() << LOGS::FSM << "NOTIFICATION message" << std::endl;
         break;
     case bgp_type::ROUTE_REFRESH:
-        log( "ROUTE_REFRESH message" );
+        logger.logInfo() << LOGS::FSM << "ROUTE_REFRESH message" << std::endl;
         break;
     }
     do_read();
@@ -216,7 +228,7 @@ void bgp_fsm::on_receive( error_code ec, std::size_t length ) {
 
 void bgp_fsm::do_read() {
     if( !sock.has_value() ) {
-        log( "Cannot acquire connection" );
+        logger.logError() << LOGS::FSM << "Cannot acquire connection" << std::endl;
         // todo: do something!
         return;
     }

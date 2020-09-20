@@ -1,24 +1,26 @@
-#include "main.hpp"
+#include "vpp.hpp"
+#include "log.hpp"
+#include "string_utils.hpp"
+
+extern Logger logger;
 
 DEFINE_VAPI_MSG_IDS_VPE_API_JSON
 DEFINE_VAPI_MSG_IDS_SESSION_API_JSON
 
 vpp_api::vpp_api() {
-    log( "vpp_api cstr" );
     auto ret = con.connect( "bgp++", nullptr, 32, 32 );
     if( ret == VAPI_OK ) {
-        log("VPP API: connected");
+        logger.logInfo() << LOGS::VPP << "VPP API: connected" << std::endl;
     } else {
-        log( "VPP API: Cannot connect to vpp" );
+        logger.logError() << LOGS::VPP << "VPP API: Cannot connect to vpp" << std::endl;
     }
 }
 
 vpp_api::~vpp_api() {
     auto ret = con.disconnect();
     if( ret == VAPI_OK ) {
-        log("VPP API: disconnected");
+        logger.logInfo() << LOGS::VPP << "VPP API: disconnected" << std::endl;
     } else {
-        log("VPP API: something went wrong, cannot disconnect");
+        logger.logError() << LOGS::VPP << "VPP API: something went wrong, cannot disconnect" << std::endl;
     }
 }
-

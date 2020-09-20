@@ -1,6 +1,23 @@
-#include "main.hpp"
+#include <iostream>
+#include <fstream>
+#include <boost/asio/ip/network_v4.hpp>
+#include <yaml-cpp/yaml.h>
 
-main_loop::main_loop( global_conf &c ):
+using address_v4 = boost::asio::ip::address_v4;
+using prefix_v4 = boost::asio::ip::network_v4;
+
+#include "main.hpp"
+#include "fsm.hpp"
+#include "config.hpp"
+#include "utils.hpp"
+#include "log.hpp"
+#include "string_utils.hpp"
+#include "yaml.hpp"
+#include "packet.hpp"
+
+Logger logger;
+
+main_loop::main_loop( GlobalConf &c ):
     conf( c ),
     accpt( io, endpoint( boost::asio::ip::tcp::v4(), c.listen_on_port ) ),
     sock( io )
@@ -11,19 +28,19 @@ main_loop::main_loop( global_conf &c ):
 }
 
 void main_loop::run() {
-    log( "Starting event loop" );
+    logger.logInfo() << LOGS::EVENT_LOOP << "Starting event loop" << std::endl;
     accpt.async_accept( sock, std::bind( &main_loop::on_accept, this, std::placeholders::_1 ) );
     io.run();
 }
 
 void main_loop::on_accept( error_code ec ) {
     if( ec ) {
-        std::cerr << "Error on accepting new connection: "s + ec.message() << std::endl;
+        logger.logError() << LOGS::EVENT_LOOP << "Error on accepting new connection: " << ec.message() << std::endl;
     }
     auto const &remote_addr = sock.remote_endpoint().address().to_v4();
     auto const &nei_it = neighbours.find( remote_addr );
     if( nei_it == neighbours.end() ) {
-        log( "Connection not from our peers, so dropping it." );
+        logger.logInfo() << LOGS::EVENT_LOOP << "Connection not from our peers, so dropping it." << std::endl;
         sock.close();
     } else {
         nei_it->second->place_connection( std::move( sock ) );
@@ -32,7 +49,7 @@ void main_loop::on_accept( error_code ec ) {
 }
 
 static void config_init() {
-    global_conf new_conf;
+    GlobalConf new_conf;
     new_conf.listen_on_port = 179;
     new_conf.my_as = 31337;
     new_conf.hold_time = 60;
@@ -54,29 +71,24 @@ static void config_init() {
 
 int main( int argc, char *argv[] ) {
     config_init();    
-    global_conf conf;
+    GlobalConf conf;
     try {
         YAML::Node config = YAML::LoadFile("config.yaml");
-        conf = config.as<global_conf>();
+        conf = config.as<GlobalConf>();
     } catch( std::exception &e ) {
-        log( "Cannot load config: "s + e.what() );
+        logger.logError() << LOGS::MAIN << "Cannot load config: " << e.what() << std::endl;
         return 1;
     }
 
-    log( "Loaded conf: " );
-    log( "\tMy AS: "s + std::to_string( conf.my_as ) );
-    log( "\tListen on port: "s + std::to_string( conf.listen_on_port ) );
-    log( "\tBGP Router ID: "s + conf.bgp_router_id.to_string() );
-    for( auto const &n: conf.neighbours ) {
-        log( "\tNeighbour: "s + n.address.to_string() + "\tAS: "s + std::to_string( n.remote_as ) );
-    }
+    logger.logInfo() << "Loaded conf: " << std::endl;
+    logger.logInfo() << conf << std::endl;
 
-    log( "Binding port in vpp" );
+    logger.logInfo() << "Binding port in vpp" << std::endl;
     try { 
         main_loop loop { conf };
         loop.run();
     } catch( std::exception &e ) {
-        std::cerr << "Error on run event loop: "s + e.what() << std::endl;
+        logger.logError() << LOGS::MAIN << "Error on run event loop: " << e.what() << std::endl;
     }
     return 0;
 }

@@ -1,6 +1,22 @@
 #ifndef FSM_HPP_
 #define FSM_HPP_
 
+#include <list>
+#include <boost/asio.hpp>
+#include <boost/asio/steady_timer.hpp>
+
+using io_context = boost::asio::io_context;
+using acceptor = boost::asio::ip::tcp::acceptor;
+using endpoint = boost::asio::ip::tcp::endpoint;
+using socket_tcp = boost::asio::ip::tcp::socket;
+using error_code = boost::system::error_code;
+using timer = boost::asio::steady_timer;
+using stream_descriptor = boost::asio::posix::stream_descriptor;
+
+struct bgp_neighbour_v4;
+struct GlobalConf;
+struct bgp_packet;
+
 #include "table.hpp"
 
 enum class FSM_STATE {
@@ -14,7 +30,7 @@ enum class FSM_STATE {
 
 struct bgp_fsm : public std::enable_shared_from_this<bgp_fsm> {
     FSM_STATE state;
-    global_conf &gconf;
+    GlobalConf &gconf;
     bgp_neighbour_v4 &conf;
     bgp_table_v4 table;
 
@@ -34,7 +50,7 @@ struct bgp_fsm : public std::enable_shared_from_this<bgp_fsm> {
     uint16_t HoldTime;
     uint16_t KeepaliveTime;
 
-    bgp_fsm( io_context &io, global_conf &g, bgp_neighbour_v4 &c );
+    bgp_fsm( io_context &io, GlobalConf &g, bgp_neighbour_v4 &c );
     void place_connection( socket_tcp s );
 
     void start_keepalive_timer();

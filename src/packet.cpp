@@ -1,4 +1,15 @@
-#include "main.hpp"
+#include <vector>
+#include <boost/asio/ip/network_v4.hpp>
+
+using address_v4 = boost::asio::ip::address_v4;
+using prefix_v4 = boost::asio::ip::network_v4;
+
+#include "packet.hpp"
+#include "utils.hpp"
+#include "log.hpp"
+#include "string_utils.hpp"
+
+extern Logger logger;
 
 path_attr_t::path_attr_t( path_attr_header *header ):
     optional( header->optional ),
@@ -12,34 +23,8 @@ path_attr_t::path_attr_t( path_attr_header *header ):
     bytes = std::vector<uint8_t>( body, body + len );
 }
 
-std::string path_attr_t::to_string() {
-    std::string out;
-
-    out += "Type: "s + std::to_string( type ) + " ";
-    out += "Length: "s + std::to_string( bytes.size() ) + " ";
-    out += "Value: ";
-    switch( type ) {
-    case PATH_ATTRIBUTE::ORIGIN:
-        out += std::to_string( static_cast<ORIGIN>( bytes[0] ) );
-        break;
-    case PATH_ATTRIBUTE::NEXT_HOP: 
-        out += address_v4( get_u32() ).to_string();
-        break;
-    case PATH_ATTRIBUTE::LOCAL_PREF:
-        out += std::to_string( get_u32() );
-        break;
-    case PATH_ATTRIBUTE::MULTI_EXIT_DISC:
-        out += std::to_string( get_u32() );
-        break;
-    default:
-        out += "NA";
-    }
-
-    return out;
-}
-
-uint32_t path_attr_t::get_u32() {
-    return bswap32( *reinterpret_cast<uint32_t*>( bytes.data() ) );
+uint32_t path_attr_t::get_u32() const {
+    return bswap32( *reinterpret_cast<const uint32_t*>( bytes.data() ) );
 }
 
 bgp_packet::bgp_packet( uint8_t *begin, std::size_t l ):
@@ -60,15 +45,15 @@ std::tuple<std::vector<nlri>,std::vector<path_attr_t>,std::vector<nlri>> bgp_pac
     auto header = get_header();
     auto update_data = data + sizeof( bgp_header );
     auto update_len = bswap16( header->length ) - sizeof( bgp_header );
-    log( "Size of UPDATE payload: "s + std::to_string( update_len ) );
+    logger.logInfo() << LOGS::PACKET << "Size of UPDATE payload: " << update_len << std::endl;
 
     // parsing withdrawn routes
     auto len = bswap16( *reinterpret_cast<uint16_t*>( update_data ) );
-    log( "Length of withdrawn routes: "s + std::to_string( len ) );
+    logger.logInfo() << LOGS::PACKET << "Length of withdrawn routes: " << len << std::endl;
     uint16_t offset = sizeof( len );
     while( len > 0 ) {
         if( offset >= update_len ) {
-            log( "Error on parsing message" );
+            logger.logError() << LOGS::PACKET << "Error on parsing message" << std::endl;
             return { {}, {}, {} };
         }
 
@@ -81,7 +66,7 @@ std::tuple<std::vector<nlri>,std::vector<path_attr_t>,std::vector<nlri>> bgp_pac
         }
 
         if( bytes > len ) {
-            log( "Error on parsing message" );
+            logger.logError() << LOGS::PACKET << "Error on parsing message" << std::endl;
             return { {}, {}, {} };
         }
         len -= bytes;
@@ -96,7 +81,7 @@ std::tuple<std::vector<nlri>,std::vector<path_attr_t>,std::vector<nlri>> bgp_pac
     // parsing bgp path attributes
     std::vector<path_attr_t> paths;
     len = bswap16( *reinterpret_cast<uint16_t*>( update_data + offset ) );
-    log( "Length of path attributes: "s + std::to_string( len ) );
+    logger.logInfo() << LOGS::PACKET << "Length of path attributes: " << len << std::endl;
     offset += sizeof( len );
     while( len > 0 ) {
         auto path = reinterpret_cast<path_attr_header*>( update_data + offset );
@@ -108,11 +93,11 @@ std::tuple<std::vector<nlri>,std::vector<path_attr_t>,std::vector<nlri>> bgp_pac
 
     // parsing NLRI
     len = update_len - offset;
-    log( "Length of NLRI: "s + std::to_string( len ) );
+    logger.logInfo() << LOGS::PACKET << "Length of NLRI: " << len << std::endl;
     std::vector<nlri> routes;
     while( len > 0 ) {
         if( offset >= update_len ) {
-            log( "Error on parsing message" );
+            logger.logError() << LOGS::PACKET << "Error on parsing message" << std::endl;
             return { {}, {}, {} };
         }
 
@@ -125,7 +110,7 @@ std::tuple<std::vector<nlri>,std::vector<path_attr_t>,std::vector<nlri>> bgp_pac
         }
 
         if( bytes > len ) {
-            log( "Error on parsing message" );
+            logger.logError() << LOGS::PACKET << "Error on parsing message" << std::endl;
             return { {}, {}, {} };
         }
         len -= bytes;

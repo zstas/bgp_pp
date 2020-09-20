@@ -1,6 +1,13 @@
-#include "main.hpp"
+#include <boost/asio/ip/network_v4.hpp>
+#include <yaml-cpp/yaml.h>
 
-YAML::Node YAML::convert<global_conf>::encode(const global_conf& rhs) {
+using address_v4 = boost::asio::ip::address_v4;
+using prefix_v4 = boost::asio::ip::network_v4;
+
+#include "yaml.hpp"
+#include "config.hpp"
+
+YAML::Node YAML::convert<GlobalConf>::encode(const GlobalConf& rhs) {
     Node node;
     node[ "listen_on_port" ]  = rhs.listen_on_port;
     node[ "my_as" ]           = rhs.my_as;
@@ -10,7 +17,7 @@ YAML::Node YAML::convert<global_conf>::encode(const global_conf& rhs) {
     return node;
 }
 
-bool YAML::convert<global_conf>::decode(const YAML::Node& node, global_conf& rhs) {
+bool YAML::convert<GlobalConf>::decode(const YAML::Node& node, GlobalConf& rhs) {
     // if(!node.IsSequence() || node.size() != 3) {
     //     return false;
     // }

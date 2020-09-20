@@ -46,8 +46,7 @@ struct path_attr_t {
 
     path_attr_t( path_attr_header *header );
 
-    std::string to_string();
-    uint32_t get_u32();
+    uint32_t get_u32() const;
 };
 
 bool operator==( const path_attr_t &lhs, const path_attr_t &rhs );
