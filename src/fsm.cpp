@@ -9,7 +9,6 @@ using prefix_v4 = boost::asio::ip::network_v4;
 
 #include "fsm.hpp"
 #include "config.hpp"
-#include "utils.hpp"
 #include "packet.hpp"
 #include "log.hpp"
 #include "string_utils.hpp"
@@ -65,13 +64,13 @@ void bgp_fsm::rx_open( bgp_packet &pkt ) {
     logger.logInfo() << LOGS::FSM << "Incoming OPEN packet from: " << sock->remote_endpoint().address().to_string() << std::endl;
     logger.logInfo() << LOGS::PACKET << open << std::endl;
 
-    if( bswap16( open->my_as ) != conf.remote_as ) {
-        logger.logError() << LOGS::FSM << "Incorrect AS: " << bswap16( open->my_as ) << ", we expected: " << conf.remote_as << std::endl;
+    if( open->my_as.native() != conf.remote_as ) {
+        logger.logError() << LOGS::FSM << "Incorrect AS: " << open->my_as.native() << ", we expected: " << conf.remote_as << std::endl;
         sock->close();
         return;
     }
 
-    HoldTime = std::min( bswap16( open->hold_time ), HoldTime );
+    HoldTime = std::min( open->hold_time.native(), HoldTime );
     KeepaliveTime = HoldTime / 3;
     logger.logInfo() << LOGS::FSM << "Negotiated timers - hold_time: " << HoldTime << " keepalive_time: " << KeepaliveTime << std::endl;
 
@@ -94,18 +93,18 @@ void bgp_fsm::tx_open() {
     // header
     auto header = pkt.get_header();
     header->type = bgp_type::OPEN;
-    header->length = bswap16( len );
+    header->length = len;
     std::fill( header->marker.begin(), header->marker.end(), 0xFF );
 
     // open body
     auto open = pkt.get_open();
     open->version = 4;
-    open->bgp_id = bswap32( gconf.bgp_router_id.to_uint() );
-    open->my_as = bswap16( gconf.my_as );
+    open->bgp_id = gconf.bgp_router_id.to_uint();
+    open->my_as = gconf.my_as;
     if( conf.hold_time.has_value() ) {
-        open->hold_time = bswap16( *conf.hold_time );
+        open->hold_time = *conf.hold_time;
     } else {
-        open->hold_time = bswap16( gconf.hold_time );
+        open->hold_time = gconf.hold_time;
     }
     open->len = 0;
 
@@ -138,7 +137,7 @@ void bgp_fsm::tx_keepalive() {
     // header
     auto header = pkt.get_header();
     header->type = bgp_type::KEEPALIVE;
-    header->length = bswap16( len );
+    header->length = len;
     std::fill( header->marker.begin(), header->marker.end(), 0xFF );
 
     // send this msg

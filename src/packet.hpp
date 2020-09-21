@@ -1,6 +1,8 @@
 #ifndef PACKET_HPP_
 #define PACKET_HPP_
 
+#include "net_integer.hpp"
+
 enum class PATH_ATTRIBUTE : uint8_t {
     ORIGIN = 1,
     AS_PATH = 2,
@@ -64,15 +66,15 @@ enum class bgp_type : uint8_t {
 
 struct bgp_header {
     std::array<uint8_t,16> marker;
-    uint16_t length;
+    BE16 length;
     bgp_type type;
 }__attribute__((__packed__));
 
 struct bgp_open {
     uint8_t version;
-    uint16_t my_as;
-    uint16_t hold_time;
-    uint32_t bgp_id;
+    BE16 my_as;
+    BE16 hold_time;
+    BE32 bgp_id;
     uint8_t len;
 }__attribute__((__packed__));
 

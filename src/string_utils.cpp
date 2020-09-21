@@ -8,7 +8,6 @@ using prefix_v4 = boost::asio::ip::network_v4;
 #include "log.hpp"
 #include "config.hpp"
 #include "packet.hpp"
-#include "utils.hpp"
 
 std::ostream& operator<<( std::ostream &os, const LOGL &l ) {
     switch( l ) {
@@ -37,7 +36,7 @@ std::ostream& operator<<( std::ostream &os, const LOGS &l ) {
 
 std::ostream& operator<<( std::ostream &os, const bgp_neighbour_v4 &nei ) {
     os << "Neighbour: " << nei.address.to_string();
-    os << " Remote AS:" << nei.remote_as;
+    os << " Remote AS: " << nei.remote_as;
     if( nei.hold_time.has_value() ) {
         os << " Hold Time: " << nei.hold_time.value();
     }
@@ -56,8 +55,8 @@ std::ostream& operator<<( std::ostream &os, const GlobalConf &conf ) {
 
 std::ostream& operator<<( std::ostream &os, const bgp_open *open ) {
     os << "BGP version: " << open->version;
-    os << " Router ID: " << address_v4( bswap32( open->bgp_id ) ).to_string();
-    os << " Hold time: " << bswap16( open->hold_time );
+    os << " Router ID: " << address_v4( open->bgp_id.native() ).to_string();
+    os << " Hold time: " << open->hold_time.native();
     return os;
 }
 

@@ -5,7 +5,6 @@ using address_v4 = boost::asio::ip::address_v4;
 using prefix_v4 = boost::asio::ip::network_v4;
 
 #include "packet.hpp"
-#include "utils.hpp"
 #include "log.hpp"
 #include "string_utils.hpp"
 
@@ -18,13 +17,13 @@ path_attr_t::path_attr_t( path_attr_header *header ):
     extended_length( header->extended_length ),
     type( header->type )
 {
-    auto len = ( header->extended_length == 1 ? bswap16( header->ext_len ) : header->len );
+    auto len = ( header->extended_length == 1 ? bswap( header->ext_len ) : header->len );
     auto body = reinterpret_cast<uint8_t*>( header ) + 2 + ( header->extended_length ? 2 : 1 );
     bytes = std::vector<uint8_t>( body, body + len );
 }
 
 uint32_t path_attr_t::get_u32() const {
-    return bswap32( *reinterpret_cast<const uint32_t*>( bytes.data() ) );
+    return bswap( *reinterpret_cast<const uint32_t*>( bytes.data() ) );
 }
 
 bgp_packet::bgp_packet( uint8_t *begin, std::size_t l ):
@@ -44,11 +43,11 @@ std::tuple<std::vector<nlri>,std::vector<path_attr_t>,std::vector<nlri>> bgp_pac
     std::vector<nlri> withdrawn_routes;
     auto header = get_header();
     auto update_data = data + sizeof( bgp_header );
-    auto update_len = bswap16( header->length ) - sizeof( bgp_header );
+    auto update_len = header->length.native() - sizeof( bgp_header );
     logger.logInfo() << LOGS::PACKET << "Size of UPDATE payload: " << update_len << std::endl;
 
     // parsing withdrawn routes
-    auto len = bswap16( *reinterpret_cast<uint16_t*>( update_data ) );
+    auto len = bswap( *reinterpret_cast<uint16_t*>( update_data ) );
     logger.logInfo() << LOGS::PACKET << "Length of withdrawn routes: " << len << std::endl;
     uint16_t offset = sizeof( len );
     while( len > 0 ) {
@@ -73,20 +72,20 @@ std::tuple<std::vector<nlri>,std::vector<path_attr_t>,std::vector<nlri>> bgp_pac
 
         uint32_t address = 0;
         std::memcpy( &address, update_data + offset + 1, bytes );
-        withdrawn_routes.emplace_back( address_v4 { bswap32( address ) }, nlri_len );
+        withdrawn_routes.emplace_back( address_v4 { bswap( address ) }, nlri_len );
 
         offset += sizeof( nlri_len ) + bytes;
     }
 
     // parsing bgp path attributes
     std::vector<path_attr_t> paths;
-    len = bswap16( *reinterpret_cast<uint16_t*>( update_data + offset ) );
+    len = bswap( *reinterpret_cast<uint16_t*>( update_data + offset ) );
     logger.logInfo() << LOGS::PACKET << "Length of path attributes: " << len << std::endl;
     offset += sizeof( len );
     while( len > 0 ) {
         auto path = reinterpret_cast<path_attr_header*>( update_data + offset );
         paths.emplace_back( path );
-        auto attr_len = 3 + ( path->extended_length == 1 ? ( bswap16( path->ext_len ) + 1 ) : path->len );
+        auto attr_len = 3 + ( path->extended_length == 1 ? ( bswap( path->ext_len ) + 1 ) : path->len );
         len -= attr_len;
         offset += attr_len;
     };
@@ -117,7 +116,7 @@ std::tuple<std::vector<nlri>,std::vector<path_attr_t>,std::vector<nlri>> bgp_pac
 
         uint32_t address = 0;
         std::memcpy( &address, update_data + offset + 1, bytes );
-        routes.emplace_back( address_v4 { bswap32( address ) }, nlri_len );
+        routes.emplace_back( address_v4 { bswap( address ) }, nlri_len );
         
         offset += sizeof( nlri_len ) + bytes;
     }
