@@ -18,4 +18,15 @@ struct GlobalConf {
     std::list<bgp_neighbour_v4> neighbours;
 };
 
+struct RoutePolicy {
+    // match
+    std::optional<prefix_v4> match_prefix_v4;
+    std::optional<address_v4> match_nexthop;
+    std::optional<uint32_t> match_localpref;
+
+    // action
+    std::optional<address_v4> set_nexthop;
+    std::optional<uint32_t> set_localpref;
+};
+
 #endif

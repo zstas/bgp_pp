@@ -17,7 +17,7 @@ path_attr_t::path_attr_t( path_attr_header *header ):
     extended_length( header->extended_length ),
     type( header->type )
 {
-    auto len = ( header->extended_length == 1 ? bswap( header->ext_len ) : header->len );
+    auto len = header->extended_length == 1 ? header->ext_len.native() : header->len;
     auto body = reinterpret_cast<uint8_t*>( header ) + 2 + ( header->extended_length ? 2 : 1 );
     bytes = std::vector<uint8_t>( body, body + len );
 }
@@ -85,7 +85,7 @@ std::tuple<std::vector<nlri>,std::vector<path_attr_t>,std::vector<nlri>> bgp_pac
     while( len > 0 ) {
         auto path = reinterpret_cast<path_attr_header*>( update_data + offset );
         paths.emplace_back( path );
-        auto attr_len = 3 + ( path->extended_length == 1 ? ( bswap( path->ext_len ) + 1 ) : path->len );
+        auto attr_len = 3 + ( path->extended_length == 1 ? ( path->ext_len.native() + 1 ) : path->len );
         len -= attr_len;
         offset += attr_len;
     };

@@ -19,11 +19,6 @@ enum class ORIGIN : uint8_t {
     INCOMPLETE = 2,
 };
 
-namespace std {
-    std::string to_string( PATH_ATTRIBUTE attr );
-    std::string to_string( ORIGIN origin );
-}
-
 struct path_attr_header {
     uint8_t unused:4;
     uint8_t extended_length:1;
@@ -32,9 +27,9 @@ struct path_attr_header {
     uint8_t optional:1;
     PATH_ATTRIBUTE type;
     union {
-        uint16_t ext_len;
+        BE16 ext_len;
         uint8_t len;
-    };
+    }__attribute__((__packed__));
 }__attribute__((__packed__));
 
 struct path_attr_t {
