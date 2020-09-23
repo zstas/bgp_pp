@@ -169,7 +169,7 @@ void bgp_fsm::rx_update( bgp_packet &pkt ) {
 
     for( auto &wroute: withdrawn_routes ) {
         logger.logInfo() << LOGS::FSM << "Received withdrawn route: " << wroute << std::endl;
-        //table.del_path();
+        // table.del_path();
     }
 
     for( auto &route: routes ) {
@@ -180,7 +180,7 @@ void bgp_fsm::rx_update( bgp_packet &pkt ) {
     logger.logInfo() << LOGS::FSM << "After update we have BGP table: " << std::endl;
     for( auto const &[ k, v ]: table.table ) {
         logger.logInfo() << LOGS::FSM << "Route: " << k.to_string();
-        for( auto path: v ) {
+        for( auto path: v->attrs ) {
             logger.logInfo() << LOGS::FSM << "Path: " << path << std::endl;
         }
     }

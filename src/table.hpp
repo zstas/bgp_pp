@@ -13,8 +13,15 @@ struct less<prefix_v4> {
 };
 }
 
+struct bgp_path {
+    std::vector<path_attr_t> attrs;
+    std::chrono::system_clock::time_point time;
+
+    bgp_path( std::vector<path_attr_t> a );
+};
+
 struct bgp_table_v4 {
-    std::multimap<prefix_v4,std::vector<path_attr_t>> table;
+    std::multimap<prefix_v4,std::shared_ptr<bgp_path>> table;
     void add_path( prefix_v4 prefix, std::vector<path_attr_t> attr );
     void del_path( prefix_v4 prefix, std::vector<path_attr_t> attr );
 };

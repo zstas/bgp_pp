@@ -2,9 +2,6 @@
 #define LOG_HPP
 
 #include <iostream>
-#include <iomanip>
-#include <chrono>
-#include <ctime>
 
 enum class LOGL: uint8_t {
     TRACE,

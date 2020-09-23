@@ -1,3 +1,7 @@
+#include <iomanip>
+#include <chrono>
+#include <ctime>
+
 #include "log.hpp"
 
 Logger::Logger( std::ostream &o ):
