@@ -169,12 +169,12 @@ void bgp_fsm::rx_update( bgp_packet &pkt ) {
 
     for( auto &wroute: withdrawn_routes ) {
         logger.logInfo() << LOGS::FSM << "Received withdrawn route: " << wroute << std::endl;
-        // table.del_path();
+        table.del_path( wroute, shared_from_this() );
     }
 
     for( auto &route: routes ) {
         logger.logInfo() << LOGS::FSM << "Received route: " << route << std::endl;
-        table.add_path( route, path_attrs );
+        table.add_path( route, path_attrs, shared_from_this() );
     }
 
     logger.logInfo() << LOGS::FSM << "After update we have BGP table: " << std::endl;

@@ -2,6 +2,7 @@
 #define TABLE_HPP_
 
 struct path_attr_t;
+struct bgp_fsm;
 
 namespace std {
 template<>
@@ -16,14 +17,15 @@ struct less<prefix_v4> {
 struct bgp_path {
     std::vector<path_attr_t> attrs;
     std::chrono::system_clock::time_point time;
+    std::shared_ptr<bgp_fsm> source;
 
-    bgp_path( std::vector<path_attr_t> a );
+    bgp_path( std::vector<path_attr_t> a, std::shared_ptr<bgp_fsm> s );
 };
 
 struct bgp_table_v4 {
     std::multimap<prefix_v4,std::shared_ptr<bgp_path>> table;
-    void add_path( prefix_v4 prefix, std::vector<path_attr_t> attr );
-    void del_path( prefix_v4 prefix, std::vector<path_attr_t> attr );
+    void add_path( prefix_v4 prefix, std::vector<path_attr_t> attr, std::shared_ptr<bgp_fsm> nei );
+    void del_path( prefix_v4 prefix, std::shared_ptr<bgp_fsm> nei );
 };
 
 #endif
