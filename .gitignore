@@ -1,4 +1,6 @@
 *
 !src
 !src/*
+!cli_src
+!cli_src/*
 CMakeLists.txt

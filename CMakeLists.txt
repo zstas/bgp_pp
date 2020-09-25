@@ -37,6 +37,14 @@ file(GLOB SOURCES src/*.cpp)
 # add the executable
 add_executable(bgp++ ${SOURCES})
 
+file(GLOB CLI_SOURCES cli_src/*.cpp)
+
+# add the executable
+add_executable(bgpctl ${CLI_SOURCES})
+
+target_link_libraries(bgpctl PUBLIC boost_program_options)
+target_link_libraries(bgpctl PUBLIC boost_serialization)
+
 target_link_libraries(bgp++ PUBLIC boost_system)
 target_link_libraries(bgp++ PUBLIC pthread)
 target_link_libraries(bgp++ PUBLIC yaml-cpp)
