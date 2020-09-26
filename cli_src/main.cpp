@@ -4,8 +4,23 @@
 #include <boost/program_options.hpp>
 #include <boost/serialization/serialization.hpp>
 #include <boost/serialization/vector.hpp>
+#include <boost/archive/binary_iarchive.hpp>
+#include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/text_oarchive.hpp>
 #include <boost/archive/text_iarchive.hpp>
+
+static auto const ser_flags = boost::archive::no_header | boost::archive::no_tracking;
+
+std::ostream& operator<<( std::ostream &os, const std::vector<uint8_t> &data ) {
+    auto flags = os.flags();
+
+    for( int b: data ) {
+        os << "0x" << std::hex << std::setw( 2 ) << std::setfill( '0' ) << b << " ";
+    }
+
+    os.flags( flags );
+    return os;
+}
 
 enum class TYPE: uint8_t {
     REQ,
@@ -69,8 +84,14 @@ int main(int argc, char *argv[])
     msg.type = TYPE::REQ;
     msg.data = { 1, 2, 3, 4 };
 
-    boost::archive::text_oarchive ser( std::cout );
+    std::stringstream ss;
+    boost::archive::binary_oarchive ser( ss, ser_flags );
     ser << msg;
+
+    std::string temp = ss.str();
+    std::vector<uint8_t> binary_data{ temp.begin(), temp.end() };
+
+    std::cout << binary_data << std::endl;
 
     return 0;
 }
