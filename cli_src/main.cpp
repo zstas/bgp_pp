@@ -1,68 +1,28 @@
 #include <iostream>
 #include <vector>
 #include <optional>
+#include <boost/optional.hpp>
 #include <boost/program_options.hpp>
 #include <boost/serialization/serialization.hpp>
 #include <boost/serialization/vector.hpp>
+#include <boost/serialization/optional.hpp>
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/text_oarchive.hpp>
 #include <boost/archive/text_iarchive.hpp>
 
-static auto const ser_flags = boost::archive::no_header | boost::archive::no_tracking;
-
-std::ostream& operator<<( std::ostream &os, const std::vector<uint8_t> &data ) {
-    auto flags = os.flags();
-
-    for( int b: data ) {
-        os << "0x" << std::hex << std::setw( 2 ) << std::setfill( '0' ) << b << " ";
-    }
-
-    os.flags( flags );
-    return os;
-}
-
-enum class TYPE: uint8_t {
-    REQ,
-    RESP
-};
-
-enum class CONTENT: uint8_t {
-    SHOW_VER,
-    SHOW_TABLE,
-    SHOW_NEI
-};
-
-struct Message {
-    TYPE type;
-    CONTENT cont;
-    std::vector<uint8_t> data;
-
-    template<class Archive>
-    void serialize( Archive &archive, const unsigned int version ) {
-        archive & type;
-        archive & cont;
-        archive & data;
-    }
-};
-
-struct Show_Table {
-    std::optional<std::string> prefix;
-
-    template<class Archive>
-    void serialize( Archive &archive, const unsigned int version ) {
-        if( prefix.has_value() ) {
-            archive & prefix;
-        }
-    }
-};
+#include "main.hpp"
+#include "string_utils.hpp"
+#include "message.hpp"
 
 int main(int argc, char *argv[])
 {
+    std::string unix_socket_path { "/var/run/bgp++.sock" };
     boost::program_options::options_description desc("Allowed options");
     desc.add_options()
         ( "help,h", "print this useful message" )
         ( "version,v", "print version" )
+        ( "path,p", boost::program_options::value<std::string>( &unix_socket_path ), "path to unix socket for cli access" )
     ;
 
     boost::program_options::positional_options_description p;
@@ -77,21 +37,32 @@ int main(int argc, char *argv[])
         std::cout << "Version: 1.2.3" << std::endl;
     }
 
-    Show_Table st;
-    st.prefix.emplace( "10.0.0.0/24" );
-    Message msg;
-    msg.cont = CONTENT::SHOW_TABLE;
-    msg.type = TYPE::REQ;
-    msg.data = { 1, 2, 3, 4 };
+    std::string binary_data;
 
-    std::stringstream ss;
-    boost::archive::binary_oarchive ser( ss, ser_flags );
-    ser << msg;
+    {
+        Show_Table st;
+        st.prefix.emplace( "10.0.0.0/24" );
+        Message msg;
+        msg.cont = CONTENT::SHOW_TABLE;
+        msg.type = TYPE::REQ;
+        auto inner = serialize( st );
+        msg.data = inner;
+        binary_data = serialize( msg );
+    }
 
-    std::string temp = ss.str();
-    std::vector<uint8_t> binary_data{ temp.begin(), temp.end() };
-
-    std::cout << binary_data << std::endl;
+    {
+        auto msg = deserialize<Message>( binary_data );
+        std::cout << msg << std::endl;
+        switch( msg.cont ) {
+        case CONTENT::SHOW_NEI: break;
+        case CONTENT::SHOW_VER: break;
+        case CONTENT::SHOW_TABLE: {
+            auto st = deserialize<Show_Table>( msg.data );
+            std::cout << st << std::endl;
+            break;
+        }
+        }
+    }
 
     return 0;
 }
