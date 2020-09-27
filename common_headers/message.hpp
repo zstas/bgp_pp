@@ -28,7 +28,7 @@ struct Message {
     }
 };
 
-struct Show_Table {
+struct Show_Table_Req {
     boost::optional<std::string> prefix;
 
     template<class Archive>

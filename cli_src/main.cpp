@@ -1,6 +1,5 @@
 #include <iostream>
 #include <vector>
-#include <optional>
 #include <boost/optional.hpp>
 #include <boost/program_options.hpp>
 #include <boost/serialization/serialization.hpp>
@@ -8,8 +7,6 @@
 #include <boost/serialization/optional.hpp>
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
-#include <boost/archive/text_oarchive.hpp>
-#include <boost/archive/text_iarchive.hpp>
 
 #include "main.hpp"
 #include "string_utils.hpp"
@@ -40,7 +37,7 @@ int main(int argc, char *argv[])
     std::string binary_data;
 
     {
-        Show_Table st;
+        Show_Table_Req st;
         st.prefix.emplace( "10.0.0.0/24" );
         Message msg;
         msg.cont = CONTENT::SHOW_TABLE;
@@ -57,7 +54,7 @@ int main(int argc, char *argv[])
         case CONTENT::SHOW_NEI: break;
         case CONTENT::SHOW_VER: break;
         case CONTENT::SHOW_TABLE: {
-            auto st = deserialize<Show_Table>( msg.data );
+            auto st = deserialize<Show_Table_Req>( msg.data );
             std::cout << st << std::endl;
             break;
         }

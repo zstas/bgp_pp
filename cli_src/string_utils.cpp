@@ -41,7 +41,7 @@ std::ostream& operator<<( std::ostream &os, const Message &msg ) {
     return os;
 }
 
-std::ostream& operator<<( std::ostream &os, const Show_Table &msg ) {
+std::ostream& operator<<( std::ostream &os, const Show_Table_Req &msg ) {
     os << "Prefix: " << msg.prefix.value_or( "N/A" );
     return os;
 }

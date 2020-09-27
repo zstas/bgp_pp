@@ -29,6 +29,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 SET(CMAKE_CXX_FLAGS_DEBUG "-O0")
 SET(CMAKE_CXX_FLAGS_DEBUG "-g")
 
+include_directories(BEFORE SYSTEM common_headers)
+
 # set the project name
 project(bgp++)
 

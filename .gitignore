@@ -3,4 +3,6 @@
 !src/*
 !cli_src
 !cli_src/*
+!common_headers
+!common_headers/*
 CMakeLists.txt
