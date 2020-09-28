@@ -1,5 +1,7 @@
 #include <iostream>
 #include <vector>
+#include <boost/asio.hpp>
+#include <boost/asio/signal_set.hpp>
 #include <boost/optional.hpp>
 #include <boost/program_options.hpp>
 #include <boost/serialization/serialization.hpp>
@@ -11,6 +13,13 @@
 #include "main.hpp"
 #include "string_utils.hpp"
 #include "message.hpp"
+#include "clicl.hpp"
+
+bool interrupted { false };
+
+void sighandler( boost::system::error_code ec, int signal ) {
+    interrupted = true;
+}
 
 int main(int argc, char *argv[])
 {
@@ -32,6 +41,15 @@ int main(int argc, char *argv[])
 
     if( vm.count( "version" ) ) {
         std::cout << "Version: 1.2.3" << std::endl;
+    }
+
+    boost::asio::io_context io;
+    CLI_Client cli { io, unix_socket_path };
+    boost::asio::signal_set set { io, SIGTERM, SIGINT, SIGKILL };
+    set.async_wait( sighandler );
+
+    while( !interrupted ) {
+        io.run();
     }
 
     std::string binary_data;

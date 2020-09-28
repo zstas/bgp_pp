@@ -46,6 +46,7 @@ add_executable(bgpctl ${CLI_SOURCES})
 
 target_link_libraries(bgpctl PUBLIC boost_program_options)
 target_link_libraries(bgpctl PUBLIC boost_serialization)
+target_link_libraries(bgpctl PUBLIC pthread)
 
 target_link_libraries(bgp++ PUBLIC boost_program_options)
 target_link_libraries(bgp++ PUBLIC boost_system)
