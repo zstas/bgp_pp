@@ -45,7 +45,7 @@ int main(int argc, char *argv[])
 
     boost::asio::io_context io;
     CLI_Client cli { io, unix_socket_path };
-    boost::asio::signal_set set { io, SIGTERM, SIGINT, SIGKILL };
+    boost::asio::signal_set set { io, SIGTERM, SIGINT };
     set.async_wait( sighandler );
 
     while( !interrupted ) {

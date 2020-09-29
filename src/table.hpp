@@ -1,6 +1,8 @@
 #ifndef TABLE_HPP_
 #define TABLE_HPP_
 
+#include <tuple>
+
 struct path_attr_t;
 struct bgp_fsm;
 
