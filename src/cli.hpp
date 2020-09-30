@@ -1,0 +1,28 @@
+#ifndef CLI_HPP
+#define CLI_HPP
+
+class CLI_Session: public std::enable_shared_from_this<CLI_Session> {
+public:
+    CLI_Session( boost::asio::io_context &i, boost::asio::local::stream_protocol::socket s );
+    void start();
+private:
+    void on_receive( const boost::system::error_code &ec, std::size_t len );
+
+    std::array<char,2048> buf;
+    boost::asio::io_context &io;
+    boost::asio::local::stream_protocol::socket sock;
+};
+
+class CLI_Server : public std::enable_shared_from_this<CLI_Server> {
+public:
+    CLI_Server( boost::asio::io_context &io, const std::string &path );
+    void start();
+private:
+    void on_accept( const boost::system::error_code &ec );
+    boost::asio::io_context &io;
+    boost::asio::local::stream_protocol::endpoint ep;
+    boost::asio::local::stream_protocol::acceptor acceptor;
+    boost::asio::local::stream_protocol::socket sock;
+};
+
+#endif

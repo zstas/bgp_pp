@@ -12,7 +12,8 @@ using prefix_v4 = boost::asio::ip::network_v4;
 
 extern Logger logger;
 
-EVLoop::EVLoop( GlobalConf &c ):
+EVLoop::EVLoop( boost::asio::io_context &i, GlobalConf &c ):
+    io( i ),
     conf( c ),
     accpt( io, endpoint( boost::asio::ip::tcp::v4(), c.listen_on_port ) ),
     sock( io )
@@ -20,12 +21,7 @@ EVLoop::EVLoop( GlobalConf &c ):
     for( auto &nei: c.neighbours ) {
         neighbours.emplace( nei.address, std::make_shared<bgp_fsm>( io, c, nei ) );
     }
-}
-
-void EVLoop::run() {
-    logger.logInfo() << LOGS::EVENT_LOOP << "Starting event loop" << std::endl;
     accpt.async_accept( sock, std::bind( &EVLoop::on_accept, this, std::placeholders::_1 ) );
-    io.run();
 }
 
 void EVLoop::on_accept( error_code ec ) {

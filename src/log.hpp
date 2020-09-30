@@ -21,6 +21,7 @@ enum class LOGS: uint8_t {
     CONNECTION,
     CONFIGURATION,
     VPP,
+    CLI
 };
 
 class Logger {

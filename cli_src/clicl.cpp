@@ -5,6 +5,29 @@
 
 #include "clicl.hpp"
 
+// void CLI_Token::lookup( std::list<std::string> &cmd, std::map<std::string,std::string> &args ) {
+//     if( cmd.empty() ) {
+//         if( tok != TOKEN::END ) {
+//             throw std::runtime_error( "Invalid input" );
+//         } else {
+//             callback( args );
+//         }
+//     }
+//     std::string cur = cmd.front();
+//     cmd.erase( cmd.begin() );
+//     if( tok == TOKEN::ARG ) {
+//         args.emplace( data, cur );
+//         auto it = next_attrs.begin();
+//         it->lookup( cmd, args );
+//     } else if( tok == TOKEN::CONT ) {
+//         auto it = std::find( next_attrs.begin(), next_attrs.end(), cur );
+//         if( it == next_attrs.end() ) {
+//             throw std::runtime_error( "Invalid input" );
+//         }
+//         it->lookup( cmd, args );
+//     }
+// }
+
 CLI_Client::CLI_Client( boost::asio::io_context &i, const std::string &path ):
     io( i ),
     ep( path ),

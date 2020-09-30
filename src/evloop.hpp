@@ -4,12 +4,6 @@
 #include <boost/asio.hpp>
 #include <boost/asio/steady_timer.hpp>
 
-using io_context = boost::asio::io_context;
-using acceptor = boost::asio::ip::tcp::acceptor;
-using endpoint = boost::asio::ip::tcp::endpoint;
-using socket_tcp = boost::asio::ip::tcp::socket;
-using error_code = boost::system::error_code;
-
 #include "table.hpp"
 
 struct GlobalConf;
@@ -17,19 +11,18 @@ struct bgp_fsm;
 
 struct EVLoop {
     // asio
-    io_context io;
-    acceptor accpt;
-    socket_tcp sock;
+    boost::asio::io_context &io;
+    boost::asio::ip::tcp::acceptor accpt;
+    boost::asio::ip::tcp::socket sock;
 
     GlobalConf &conf;
     bgp_table_v4 table;
     std::map<address_v4,std::shared_ptr<bgp_fsm>> neighbours;
 
-    EVLoop( GlobalConf &c );
+    EVLoop( boost::asio::io_context &i, GlobalConf &c );
 
-    void run(); 
-    void on_accept( error_code ec );
-    void on_vpp_accept( error_code ec );
+    void on_accept( boost::system::error_code ec );
+    void on_vpp_accept( boost::system::error_code ec );
 };
 
 #endif

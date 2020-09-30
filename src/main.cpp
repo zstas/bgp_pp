@@ -14,6 +14,7 @@ using prefix_v4 = boost::asio::ip::network_v4;
 #include "yaml.hpp"
 #include "evloop.hpp"
 #include "packet.hpp"
+#include "cli.hpp"
 
 Logger logger;
 
@@ -79,11 +80,17 @@ int main( int argc, char *argv[] ) {
     logger.logInfo() << LOGS::MAIN << "Loaded conf: " << std::endl;
     logger.logInfo() << LOGS::MAIN << conf;
 
-    try { 
-        EVLoop loop { conf };
-        loop.run();
-    } catch( std::exception &e ) {
-        logger.logError() << LOGS::MAIN << "Error on run event loop: " << e.what() << std::endl;
+    unlink( unix_socket_path.c_str() );
+
+    boost::asio::io_context io;
+    EVLoop loop { io, conf };
+    auto cli = std::make_shared<CLI_Server>( io, unix_socket_path );
+    while( true ) {
+        try { 
+            io.run();
+        } catch( std::exception &e ) {
+            logger.logError() << LOGS::MAIN << "Error on run event loop: " << e.what() << std::endl;
+        }
     }
     return 0;
 }
