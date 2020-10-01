@@ -84,7 +84,7 @@ int main( int argc, char *argv[] ) {
 
     boost::asio::io_context io;
     EVLoop loop { io, conf };
-    auto cli = std::make_shared<CLI_Server>( io, unix_socket_path );
+    auto cli = std::make_shared<CLI_Server>( io, unix_socket_path, loop );
     while( true ) {
         try { 
             io.run();

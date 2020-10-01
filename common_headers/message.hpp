@@ -48,7 +48,7 @@ struct BGP_Entry {
     std::string nexthop;
     uint32_t local_pref;
     std::string source;
-    std::chrono::system_clock::time_point time;
+    std::string time;
     std::string as_path;
 
     template<class Archive>

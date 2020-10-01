@@ -45,3 +45,19 @@ std::ostream& operator<<( std::ostream &os, const Show_Table_Req &msg ) {
     os << "Prefix: " << msg.prefix.value_or( "N/A" );
     return os;
 }
+
+std::ostream& operator<<( std::ostream &os, const Show_Table_Resp &msg ) {
+    auto flags = os.flags();
+    os << std::setw( 20 ) << "Prefix";
+    os << std::setw( 20 ) << "Nexthop";
+    os << std::setw( 10 ) << "LocalPref";
+    os << std::setw( 10 ) << "Since";
+    for( auto const &entry: msg.entries ) {
+        os << std::setw( 20 ) << entry.prefix;
+        os << std::setw( 20 ) << entry.nexthop;
+        os << std::setw( 10 ) << entry.local_pref;
+        os << std::setw( 10 ) << entry.time;
+    }
+    os.flags( flags );
+    return os;
+}
