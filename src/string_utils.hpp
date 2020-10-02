@@ -11,6 +11,7 @@ struct bgp_open;
 struct path_attr_t;
 struct GlobalConf;
 struct bgp_neighbour_v4;
+enum class CONTENT: uint8_t;
 
 std::ostream& operator<<( std::ostream &os, const LOGL &l );
 std::ostream& operator<<( std::ostream &os, const LOGS &l );
@@ -20,5 +21,6 @@ std::ostream& operator<<( std::ostream &os, const bgp_open *open );
 std::ostream& operator<<( std::ostream &os, const path_attr_t &attr );
 std::ostream& operator<<( std::ostream &os, const PATH_ATTRIBUTE &attr );
 std::ostream& operator<<( std::ostream &os, const ORIGIN &orig );
+std::ostream& operator<<( std::ostream &os, const CONTENT &cont );
 
 #endif

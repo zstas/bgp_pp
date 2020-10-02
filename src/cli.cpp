@@ -42,6 +42,8 @@ void CLI_Session::on_receive( const boost::system::error_code &ec, std::size_t l
         return;
     }
 
+    logger.logInfo() << LOGS::CLI << "Got new request from cli session: " << inMsg.cont << std::endl;
+
     Message outMsg;
     outMsg.type = TYPE::RESP;
     outMsg.cont = inMsg.cont;

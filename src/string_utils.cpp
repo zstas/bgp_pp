@@ -1,4 +1,5 @@
 #include <iostream>
+#include <sstream>
 #include <boost/asio/ip/network_v4.hpp>
 
 using address_v4 = boost::asio::ip::address_v4;
@@ -8,6 +9,7 @@ using prefix_v4 = boost::asio::ip::network_v4;
 #include "log.hpp"
 #include "config.hpp"
 #include "packet.hpp"
+#include "message.hpp"
 
 std::ostream& operator<<( std::ostream &os, const LOGL &l ) {
     switch( l ) {
@@ -30,6 +32,7 @@ std::ostream& operator<<( std::ostream &os, const LOGS &l ) {
     case LOGS::FSM: return os << "[FSM] ";
     case LOGS::CONNECTION: return os << "[CONNECTION] ";
     case LOGS::CONFIGURATION: return os << "[CONFIG] ";
+    case LOGS::CLI: return os << "[CLI] ";
     }
     return os;
 }
@@ -115,6 +118,16 @@ std::ostream& operator<<( std::ostream &os, const ORIGIN &orig ) {
         os << "INCOMPLETE";
     default:
         os << "ERROR";
+    }
+    return os;
+}
+
+std::ostream& operator<<( std::ostream &os, const CONTENT &cont ) {
+    switch( cont ) {
+    case CONTENT::SHOW_VER: os << "SHOW_VER"; break;
+    case CONTENT::SHOW_TABLE: os << "SHOW_TABLE"; break;
+    case CONTENT::SHOW_NEI: os << "SHOW_NEI"; break;
+    default: os << "UNKNOWN"; break;
     }
     return os;
 }
