@@ -59,7 +59,7 @@ void CLI_Session::on_receive( const boost::system::error_code &ec, std::size_t l
                 BGP_Entry entry;
                 auto in_time_t = std::chrono::system_clock::to_time_t( path->time );
                 std::stringstream stream;
-                stream << std::put_time( std::localtime( &in_time_t ), "%Y-%m-%d %X: ");
+                stream << std::put_time( std::localtime( &in_time_t ), "%Y-%m-%d %X");
                 entry.time = stream.str();
                 entry.prefix = prefix.to_string();
                 for( auto const &attr: path->attrs ) {

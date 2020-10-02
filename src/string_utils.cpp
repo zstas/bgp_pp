@@ -89,21 +89,21 @@ std::ostream& operator<<( std::ostream &os, const path_attr_t &attr ) {
 std::ostream& operator<<( std::ostream &os, const PATH_ATTRIBUTE &attr ) {
     switch( attr ) {
     case PATH_ATTRIBUTE::ORIGIN:
-        os << "ORIGIN";
+        os << "ORIGIN"; break;
     case PATH_ATTRIBUTE::AS_PATH:
-        os << "AS_PATH";
+        os << "AS_PATH"; break;
     case PATH_ATTRIBUTE::NEXT_HOP:
-        os << "NEXT_HOP";
+        os << "NEXT_HOP"; break;
     case PATH_ATTRIBUTE::MULTI_EXIT_DISC:
-        os << "MULTI_EXIT_DISC";
+        os << "MULTI_EXIT_DISC"; break;
     case PATH_ATTRIBUTE::LOCAL_PREF:
-        os << "LOCAL_PREF";
+        os << "LOCAL_PREF"; break;
     case PATH_ATTRIBUTE::ATOMIC_AGGREGATE:
-        os << "ATOMIC_AGGREGATE";
+        os << "ATOMIC_AGGREGATE"; break;
     case PATH_ATTRIBUTE::AGGREGATOR:
-        os << "AGGREGATOR";
+        os << "AGGREGATOR"; break;
     default:
-        os << "NA";
+        os << "NA"; break;
     }
     return os;
 }
@@ -111,13 +111,13 @@ std::ostream& operator<<( std::ostream &os, const PATH_ATTRIBUTE &attr ) {
 std::ostream& operator<<( std::ostream &os, const ORIGIN &orig ) {
     switch( orig ) {
     case ORIGIN::EGP:
-        os << "EGP";
+        os << "EGP"; break;
     case ORIGIN::IGP:
-        os << "IGP";
+        os << "IGP"; break;
     case ORIGIN::INCOMPLETE:
-        os << "INCOMPLETE";
+        os << "INCOMPLETE"; break;
     default:
-        os << "ERROR";
+        os << "ERROR"; break;
     }
     return os;
 }

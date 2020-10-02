@@ -179,7 +179,7 @@ void bgp_fsm::rx_update( bgp_packet &pkt ) {
 
     logger.logInfo() << LOGS::FSM << "After update we have BGP table: " << std::endl;
     for( auto const &[ k, v ]: table.table ) {
-        logger.logInfo() << LOGS::FSM << "Route: " << k.to_string();
+        logger.logInfo() << LOGS::FSM << "Route: " << k.to_string() << std::endl;
         for( auto path: v->attrs ) {
             logger.logInfo() << LOGS::FSM << "Path: " << path << std::endl;
         }

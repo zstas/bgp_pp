@@ -49,14 +49,16 @@ std::ostream& operator<<( std::ostream &os, const Show_Table_Req &msg ) {
 std::ostream& operator<<( std::ostream &os, const Show_Table_Resp &msg ) {
     auto flags = os.flags();
     os << std::setw( 20 ) << "Prefix";
-    os << std::setw( 20 ) << "Nexthop";
-    os << std::setw( 10 ) << "LocalPref";
-    os << std::setw( 10 ) << "Since";
+    os << std::setw( 16 ) << "Nexthop";
+    os << std::setw( 16 ) << "LocalPref";
+    os << std::setw( 30 ) << "Since";
+    os << std::endl;
     for( auto const &entry: msg.entries ) {
         os << std::setw( 20 ) << entry.prefix;
-        os << std::setw( 20 ) << entry.nexthop;
-        os << std::setw( 10 ) << entry.local_pref;
-        os << std::setw( 10 ) << entry.time;
+        os << std::setw( 16 ) << entry.nexthop;
+        os << std::setw( 16 ) << entry.local_pref;
+        os << std::setw( 30 ) << entry.time;
+        os << std::endl;
     }
     os.flags( flags );
     return os;
