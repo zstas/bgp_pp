@@ -1,7 +1,7 @@
 #ifndef CLI_HPP
 #define CLI_HPP
 
-struct EVLoop;
+class EVLoop;
 
 class CLI_Session: public std::enable_shared_from_this<CLI_Session> {
 public:

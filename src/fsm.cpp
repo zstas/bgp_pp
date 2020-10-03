@@ -44,22 +44,18 @@ void bgp_fsm::start_keepalive_timer() {
 
 void bgp_fsm::on_keepalive_timer( error_code ec ) {
     logger.logInfo() << LOGS::FSM << "Periodic KEEPALIVE" << std::endl;
-    if( sock.has_value() ) {
-        tx_keepalive();
-        start_keepalive_timer();
-    } else {
+    if( ec ) {
         logger.logInfo() << LOGS::FSM << "Lost connection" << std::endl;
         // todo change state
+        start_keepalive_timer();
+        return;
     }
+    tx_keepalive();
+    start_keepalive_timer();
 }
 
 void bgp_fsm::rx_open( bgp_packet &pkt ) {
     auto open = pkt.get_open();
-    if( !sock.has_value() ) {
-        logger.logInfo() << LOGS::FSM << "Cannot acquire connection" << std::endl;
-        // todo: do something!
-        return;
-    }
 
     logger.logInfo() << LOGS::FSM << "Incoming OPEN packet from: " << sock->remote_endpoint().address().to_string() << std::endl;
     logger.logInfo() << LOGS::PACKET << open << std::endl;
@@ -79,12 +75,6 @@ void bgp_fsm::rx_open( bgp_packet &pkt ) {
 }
 
 void bgp_fsm::tx_open() {
-    if( !sock.has_value() ) {
-        logger.logError() << LOGS::FSM << "Cannot acquire connection" << std::endl;
-        // todo: do something!
-        return;
-    }
-
     auto len = sizeof( bgp_header ) + sizeof( bgp_open );
     auto pkt_buf = std::make_shared<std::vector<uint8_t>>();
     pkt_buf->resize( len );
@@ -122,12 +112,6 @@ void bgp_fsm::on_send( std::shared_ptr<std::vector<uint8_t>> pkt, error_code ec,
 }
 
 void bgp_fsm::tx_keepalive() {
-    if( !sock.has_value() ) {
-        logger.logError() << LOGS::FSM << "Cannot acquire connection" << std::endl;
-        // todo: do something!
-        return;
-    }
-
     logger.logInfo() << LOGS::FSM << "Sending KEEPALIVE to peer: " << sock->remote_endpoint().address().to_string() << std::endl;
     auto len = sizeof( bgp_header );
     auto pkt_buf = std::make_shared<std::vector<uint8_t>>();
@@ -145,12 +129,6 @@ void bgp_fsm::tx_keepalive() {
 }
 
 void bgp_fsm::rx_keepalive( bgp_packet &pkt ) {
-    if( !sock.has_value() ) {
-        logger.logError() << LOGS::FSM << "Cannot acquire connection" << std::endl;
-        // todo: do something!
-        return;
-    }
-
     if( state == FSM_STATE::OPENCONFIRM || state == FSM_STATE::OPENSENT ) {
         logger.logError() << LOGS::FSM << "BGP goes to ESTABLISHED state with peer: " << sock->remote_endpoint().address().to_string() << std::endl;
         state = FSM_STATE::ESTABLISHED;
@@ -192,12 +170,6 @@ void bgp_fsm::on_receive( error_code ec, std::size_t length ) {
         return;
     }
 
-    if( !sock.has_value() ) {
-        logger.logError() << LOGS::FSM << "Cannot acquire connection" << std::endl;
-        // todo: do something!
-        return;
-    }
-
     logger.logInfo() << LOGS::FSM << "Received message of size: " << length << std::endl;
     bgp_packet pkt { buffer.begin(), length };
     auto bgp_header = pkt.get_header();
@@ -226,11 +198,5 @@ void bgp_fsm::on_receive( error_code ec, std::size_t length ) {
 }
 
 void bgp_fsm::do_read() {
-    if( !sock.has_value() ) {
-        logger.logError() << LOGS::FSM << "Cannot acquire connection" << std::endl;
-        // todo: do something!
-        return;
-    }
-
     sock->async_receive( boost::asio::buffer( buffer ), std::bind( &bgp_fsm::on_receive, shared_from_this(), std::placeholders::_1, std::placeholders::_2 ) );
 }
