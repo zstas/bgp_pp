@@ -18,14 +18,23 @@ bgp_path::bgp_path( std::vector<path_attr_t> a, std::shared_ptr<bgp_fsm> s ):
 {}
 
 void bgp_table_v4::add_path( prefix_v4 prefix, std::vector<path_attr_t> attr, std::shared_ptr<bgp_fsm> nei ) {
-    auto it = std::find_if( 
+    // If we already have path from this neighbour
+    for( auto prefixIt = table.find( prefix ); prefixIt != table.end(); prefixIt++ ) {
+        if( prefixIt->second->source != nei ) {
+            continue;
+        }
+        prefixIt->second->attrs = std::move( attr );
+        return;
+    }
+    // If not, we will look if path already exists
+    auto pathIt = std::find_if( 
         table.begin(), 
         table.end(), 
         [ &attr ]( const std::pair<prefix_v4,std::shared_ptr<bgp_path>> &pair ) -> bool {
             return pair.second->attrs == attr;
         }
     );
-    if( it == table.end() ) {
+    if( pathIt == table.end() ) {
         table.emplace( std::piecewise_construct,
             std::forward_as_tuple( prefix ), 
             std::forward_as_tuple( std::make_shared<bgp_path>( attr, nei ) )
@@ -33,17 +42,17 @@ void bgp_table_v4::add_path( prefix_v4 prefix, std::vector<path_attr_t> attr, st
     } else {
         table.emplace( std::piecewise_construct, 
             std::forward_as_tuple( prefix ), 
-            std::forward_as_tuple( it->second )
+            std::forward_as_tuple( pathIt->second )
         );
     }
 }
 
 void bgp_table_v4::del_path( prefix_v4 prefix, std::shared_ptr<bgp_fsm> nei ) {
-    auto const &range = table.equal_range( prefix );
-    for( auto i = range.first; i != range.second; ++i ) {
-        if( i->second->source == nei ) {
-            table.erase( i );
-            break;
+    for( auto prefixIt = table.find( prefix ); prefixIt != table.end(); prefixIt++ ) {
+        if( prefixIt->second->source != nei ) {
+            continue;
         }
+        table.erase( prefixIt );
+        return;
     }
 }

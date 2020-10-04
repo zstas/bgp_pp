@@ -32,7 +32,7 @@ struct bgp_fsm : public std::enable_shared_from_this<bgp_fsm> {
     FSM_STATE state;
     GlobalConf &gconf;
     bgp_neighbour_v4 &conf;
-    bgp_table_v4 table;
+    bgp_table_v4 &table;
 
     std::array<uint8_t,65535> buffer;
     std::optional<socket_tcp> sock;
@@ -50,7 +50,7 @@ struct bgp_fsm : public std::enable_shared_from_this<bgp_fsm> {
     uint16_t HoldTime;
     uint16_t KeepaliveTime;
 
-    bgp_fsm( io_context &io, GlobalConf &g, bgp_neighbour_v4 &c );
+    bgp_fsm( io_context &io, GlobalConf &g, bgp_table_v4 &t, bgp_neighbour_v4 &c );
     void place_connection( socket_tcp s );
 
     void start_keepalive_timer();

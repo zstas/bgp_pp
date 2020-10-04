@@ -15,10 +15,11 @@ using prefix_v4 = boost::asio::ip::network_v4;
 
 extern Logger logger;
 
-bgp_fsm::bgp_fsm( io_context &io,  GlobalConf &g, bgp_neighbour_v4 &c ):
+bgp_fsm::bgp_fsm( io_context &io,  GlobalConf &g, bgp_table_v4 &t, bgp_neighbour_v4 &c ):
     state( FSM_STATE::IDLE ),
     gconf( g ),
     conf( c ),
+    table( t ),
     ConnectRetryTimer( io ),
     HoldTimer( io ),
     KeepaliveTimer( io )

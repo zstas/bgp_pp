@@ -19,7 +19,7 @@ EVLoop::EVLoop( boost::asio::io_context &i, GlobalConf &c ):
     sock( io )
 {
     for( auto &nei: c.neighbours ) {
-        neighbours.emplace( nei.address, std::make_shared<bgp_fsm>( io, c, nei ) );
+        neighbours.emplace( nei.address, std::make_shared<bgp_fsm>( io, c, table, nei ) );
     }
     accpt.async_accept( sock, std::bind( &EVLoop::on_accept, this, std::placeholders::_1 ) );
 }

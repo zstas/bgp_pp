@@ -14,12 +14,12 @@ public:
     EVLoop( boost::asio::io_context &i, GlobalConf &c );
     
     std::map<address_v4,std::shared_ptr<bgp_fsm>> neighbours;
+    bgp_table_v4 table;
 private:
     void on_accept( boost::system::error_code ec );
     void on_vpp_accept( boost::system::error_code ec );
 
     GlobalConf &conf;
-    bgp_table_v4 table;
     // asio
     boost::asio::io_context &io;
     boost::asio::ip::tcp::acceptor accpt;
