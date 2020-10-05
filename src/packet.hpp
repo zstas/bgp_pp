@@ -19,6 +19,19 @@ enum class ORIGIN : uint8_t {
     INCOMPLETE = 2,
 };
 
+enum class AS_PATH_SEGMENT_TYPE : uint8_t {
+    AS_SET = 1,
+    AS_SEQUENCE = 2,
+};
+
+struct as_path_header {
+    AS_PATH_SEGMENT_TYPE type;
+    uint8_t len;
+    BE16 val[0];
+
+    BE16* get_as() const;
+}__attribute__((__packed__));
+
 struct path_attr_header {
     uint8_t unused:4;
     uint8_t extended_length:1;
@@ -44,6 +57,7 @@ struct path_attr_t {
     path_attr_t( path_attr_header *header );
 
     uint32_t get_u32() const;
+    std::vector<uint32_t> parse_as_path() const;
 };
 
 bool operator==( const path_attr_t &lhs, const path_attr_t &rhs );

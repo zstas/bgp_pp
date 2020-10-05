@@ -26,6 +26,34 @@ uint32_t path_attr_t::get_u32() const {
     return bswap( *reinterpret_cast<const uint32_t*>( bytes.data() ) );
 }
 
+BE16* as_path_header::get_as() const {
+    return ( BE16* )( val );
+}
+
+std::vector<uint32_t> path_attr_t::parse_as_path() const {
+    std::vector<uint32_t> list;
+
+    auto temp = bytes;
+    while( !temp.empty() ) {
+        if( temp.size() < 2 ) {
+            temp.clear();
+            break;
+        }
+        auto header = reinterpret_cast<as_path_header*>( temp.data() );
+        if( temp.size() < ( sizeof( *header ) + 2 * header->len ) ) {
+            temp.clear();
+            break;
+        }
+        auto val = header->get_as();
+        for( int i = 0; i < header->len; i++ ) {
+            list.emplace_back( val[ i ].native() );
+        }
+        temp.erase( temp.begin(), temp.begin() + sizeof( *header ) + ( header->len * 2 ) );
+    }
+
+    return list;
+}
+
 bgp_packet::bgp_packet( uint8_t *begin, std::size_t l ):
     data( begin ),
     length( l )

@@ -16,6 +16,7 @@ enum class CONTENT: uint8_t;
 std::ostream& operator<<( std::ostream &os, const LOGL &l );
 std::ostream& operator<<( std::ostream &os, const LOGS &l );
 std::ostream& operator<<( std::ostream &os, const GlobalConf &conf );
+std::ostream& operator<<( std::ostream &os, const std::vector<uint8_t> &val );
 std::ostream& operator<<( std::ostream &os, const bgp_neighbour_v4 &nei );
 std::ostream& operator<<( std::ostream &os, const bgp_open *open );
 std::ostream& operator<<( std::ostream &os, const path_attr_t &attr );

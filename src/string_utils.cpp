@@ -1,4 +1,5 @@
 #include <iostream>
+#include <iomanip>
 #include <sstream>
 #include <boost/asio/ip/network_v4.hpp>
 
@@ -34,6 +35,17 @@ std::ostream& operator<<( std::ostream &os, const LOGS &l ) {
     case LOGS::CONFIGURATION: return os << "[CONFIG] ";
     case LOGS::CLI: return os << "[CLI] ";
     }
+    return os;
+}
+
+std::ostream& operator<<( std::ostream &os, const std::vector<uint8_t> &val ) {
+    auto flags = os.flags();
+
+    for( auto const &b: val ) {
+        os << "0x" << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>( b ) << " ";
+    }
+
+    os.flags( flags );
     return os;
 }
 
@@ -80,8 +92,14 @@ std::ostream& operator<<( std::ostream &os, const path_attr_t &attr ) {
     case PATH_ATTRIBUTE::MULTI_EXIT_DISC:
         os << attr.get_u32();
         break;
+    case PATH_ATTRIBUTE::AS_PATH:
+        for( auto const &l : attr.parse_as_path() ) {
+            os << l << " ";
+        }
+        break;
     default:
         os << "NA";
+        break;
     }
     return os;
 }
