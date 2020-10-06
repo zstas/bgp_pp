@@ -1,6 +1,7 @@
 #include <iostream>
 #include <memory>
 #include <iomanip>
+#include <sstream>
 #include <boost/asio.hpp>
 #include <boost/asio/local/stream_protocol.hpp>
 #include <boost/asio/ip/network_v4.hpp>
@@ -66,6 +67,13 @@ void CLI_Session::on_receive( const boost::system::error_code &ec, std::size_t l
                     entry.nexthop = boost::asio::ip::make_address_v4( attr.get_u32() ).to_string();
                 } else if( attr.type == PATH_ATTRIBUTE::LOCAL_PREF ) {
                     entry.local_pref = attr.get_u32();
+                } else if( attr.type == PATH_ATTRIBUTE::AS_PATH ) {
+                    std::stringstream ss;
+                    auto temp = attr.parse_as_path();
+                    for( auto const &as: temp ) {
+                        ss << as << " ";
+                    }
+                    entry.as_path = ss.str();
                 }
             }
             resp.entries.push_back( entry );

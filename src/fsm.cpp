@@ -31,6 +31,12 @@ bgp_fsm::bgp_fsm( io_context &io,  GlobalConf &g, bgp_table_v4 &t, bgp_neighbour
 }
 
 void bgp_fsm::place_connection( socket_tcp s ) {
+    if( sock.has_value() ) {
+        sock->close();
+        sock.reset();
+
+        KeepaliveTimer.cancel();
+    }
     sock.emplace( std::move( s ) );
     auto const &endpoint = sock->remote_endpoint();
     logger.logInfo() << LOGS::FSM << "Incoming connection: " << endpoint.address().to_string() << ":" << endpoint.port() << std::endl;
@@ -44,13 +50,12 @@ void bgp_fsm::start_keepalive_timer() {
 }
 
 void bgp_fsm::on_keepalive_timer( error_code ec ) {
-    logger.logInfo() << LOGS::FSM << "Periodic KEEPALIVE" << std::endl;
     if( ec ) {
-        logger.logInfo() << LOGS::FSM << "Lost connection" << std::endl;
+        logger.logInfo() << LOGS::FSM << "Keepaliva timer: " << ec.message() << std::endl;
         // todo change state
-        start_keepalive_timer();
         return;
     }
+    logger.logInfo() << LOGS::FSM << "Periodic KEEPALIVE" << std::endl;
     tx_keepalive();
     start_keepalive_timer();
 }

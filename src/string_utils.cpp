@@ -69,9 +69,10 @@ std::ostream& operator<<( std::ostream &os, const GlobalConf &conf ) {
 }
 
 std::ostream& operator<<( std::ostream &os, const bgp_open *open ) {
-    os << "BGP version: " << open->version;
-    os << " Router ID: " << address_v4( open->bgp_id.native() ).to_string();
-    os << " Hold time: " << open->hold_time.native();
+    os << "BGP version: " << static_cast<int>( open->version );
+    os << ", Router ID: " << address_v4( open->bgp_id.native() ).to_string();
+    os << ", Hold time: " << open->hold_time.native();
+    os << ", AS: " << open->my_as.native();
     return os;
 }
 
