@@ -56,12 +56,12 @@ void CLI_Session::on_receive( const boost::system::error_code &ec, std::size_t l
         Show_Table_Resp resp;
         for( auto const &[ prefix, path ]: runtime.table.table ) {
             BGP_Entry entry;
-            auto in_time_t = std::chrono::system_clock::to_time_t( path->time );
+            auto in_time_t = std::chrono::system_clock::to_time_t( path.time );
             std::stringstream stream;
             stream << std::put_time( std::localtime( &in_time_t ), "%Y-%m-%d %X");
             entry.time = stream.str();
             entry.prefix = prefix.to_string();
-            for( auto const &attr: path->attrs ) {
+            for( auto const &attr: *path.attrs ) {
                 if( attr.type == PATH_ATTRIBUTE::NEXT_HOP ) {
                     entry.nexthop = boost::asio::ip::make_address_v4( attr.get_u32() ).to_string();
                 } else if( attr.type == PATH_ATTRIBUTE::LOCAL_PREF ) {

@@ -16,7 +16,8 @@ EVLoop::EVLoop( boost::asio::io_context &i, GlobalConf &c ):
     io( i ),
     conf( c ),
     accpt( io, endpoint( boost::asio::ip::tcp::v4(), c.listen_on_port ) ),
-    sock( io )
+    sock( io ),
+    table( conf )
 {
     for( auto &nei: c.neighbours ) {
         neighbours.emplace( nei.address, std::make_shared<bgp_fsm>( io, c, table, nei ) );
