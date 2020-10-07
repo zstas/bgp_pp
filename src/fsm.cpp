@@ -176,11 +176,11 @@ void bgp_fsm::on_receive( error_code ec, std::size_t length ) {
         return;
     }
 
-    logger.logInfo() << LOGS::FSM << "Received message of size: " << length << std::endl;
+    logger.logDebug() << LOGS::FSM << "Received message of size: " << length << std::endl;
     bgp_packet pkt { buffer.begin(), length };
     auto bgp_header = pkt.get_header();
     if( std::any_of( bgp_header->marker.begin(), bgp_header->marker.end(), []( uint8_t el ) { return el != 0xFF; } ) ) {
-        logger.logInfo() << LOGS::FSM << "Wrong BGP marker in header!" << std::endl;
+        logger.logError() << LOGS::FSM << "Wrong BGP marker in header!" << std::endl;
         return;
     }
     switch( bgp_header->type ) {
@@ -205,4 +205,97 @@ void bgp_fsm::on_receive( error_code ec, std::size_t length ) {
 
 void bgp_fsm::do_read() {
     sock->async_receive( boost::asio::buffer( buffer ), std::bind( &bgp_fsm::on_receive, shared_from_this(), std::placeholders::_1, std::placeholders::_2 ) );
+}
+
+void bgp_fsm::tx_update( const std::vector<nlri> &prefixes, const std::vector<path_attr_t> &path, const std::vector<nlri> &withdrawn ) {
+    logger.logInfo() << LOGS::FSM << "Sending UPDATE to peer: " << sock->remote_endpoint().address().to_string() << std::endl;
+
+    // making withdrawn buf
+    std::vector<uint8_t> withdrawn_body;
+    withdrawn_body.reserve( 1000 );
+
+    for( auto const &w: withdrawn ) {
+        uint8_t nlri_len = w.prefix_length();
+        withdrawn_body.push_back( nlri_len );
+        auto pref = bswap( w.address().to_uint() );
+
+        auto bytes = nlri_len / 8;
+        if( nlri_len % 8 != 0 ) {
+            bytes++;
+        }
+        auto pref_data = reinterpret_cast<uint8_t*>( &pref );
+        for( int i = 0; i < bytes; i++ ) {
+            withdrawn_body.push_back( pref_data[ i ] );
+        }
+    }
+
+    {
+        auto len = bswap( static_cast<uint16_t>( withdrawn_body.size() ) );
+        std::array<uint8_t,2> temp;
+        std::memcpy( temp.data(), &len, 2 );
+        withdrawn_body.insert( withdrawn_body.begin(), temp.begin(), temp.end() );
+    }
+
+    // making path buf
+    std::vector<uint8_t> path_body;
+    path_body.reserve( 1000 );
+
+    for( auto const &p: path ) {
+        path_body.insert( path_body.end(), p.bytes.begin(), p.bytes.end() );
+    }
+
+    {
+        auto len = bswap( static_cast<uint16_t>( path_body.size() ) );
+        std::array<uint8_t,2> temp;
+        std::memcpy( temp.data(), &len, 2 );
+        path_body.insert( path_body.begin(), temp.begin(), temp.end() );
+    }
+
+    // making nlri buf
+    std::vector<uint8_t> nlri_body;
+    nlri_body.reserve( 1000 );
+
+    for( auto const &w: withdrawn ) {
+        uint8_t nlri_len = w.prefix_length();
+        nlri_body.push_back( nlri_len );
+        auto pref = bswap( w.address().to_uint() );
+
+        auto bytes = nlri_len / 8;
+        if( nlri_len % 8 != 0 ) {
+            bytes++;
+        }
+        auto pref_data = reinterpret_cast<uint8_t*>( &pref );
+        for( int i = 0; i < bytes; i++ ) {
+            nlri_body.push_back( pref_data[ i ] );
+        }
+    }
+
+    {
+        auto len = bswap( static_cast<uint16_t>( nlri_body.size() ) );
+        std::array<uint8_t,2> temp;
+        std::memcpy( temp.data(), &len, 2 );
+        nlri_body.insert( nlri_body.begin(), temp.begin(), temp.end() );
+    }
+
+    std::vector<uint8_t> body { withdrawn_body.begin(), withdrawn_body.end() };
+    body.insert( body.end(), path_body.begin(), path_body.end() );
+    body.insert( body.end(), nlri_body.begin(), nlri_body.end() );
+
+    // making packet itself
+
+    auto pkt_buf = std::make_shared<std::vector<uint8_t>>();
+    auto len = sizeof( bgp_header ) + body.size();
+    pkt_buf->resize( len );
+    bgp_packet pkt { pkt_buf->data(), pkt_buf->size() };
+
+    // header
+    auto header = pkt.get_header();
+    header->type = bgp_type::UPDATE;
+    header->length = len;
+    std::fill( header->marker.begin(), header->marker.end(), 0xFF );
+
+    std::memcpy( pkt.get_body(), body.data(), body.size() );
+
+    // send this msg
+    sock->async_send( boost::asio::buffer( *pkt_buf ), std::bind( &bgp_fsm::on_send, shared_from_this(), pkt_buf, std::placeholders::_1, std::placeholders::_2 ) );
 }
