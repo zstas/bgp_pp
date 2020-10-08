@@ -76,6 +76,9 @@ void CLI_Session::on_receive( const boost::system::error_code &ec, std::size_t l
                     entry.as_path = ss.str();
                 }
             }
+            if( path.isBest ) {
+                entry.best = true;
+            }
             resp.entries.push_back( entry );
         }
         outMsg.data = serialize( resp );

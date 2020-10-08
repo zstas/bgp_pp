@@ -168,6 +168,8 @@ void bgp_fsm::rx_update( bgp_packet &pkt ) {
             logger.logInfo() << LOGS::FSM << "Path: " << path << std::endl;
         }
     }
+
+    table.best_path_selection();
 }
 
 void bgp_fsm::on_receive( error_code ec, std::size_t length ) {
@@ -176,29 +178,44 @@ void bgp_fsm::on_receive( error_code ec, std::size_t length ) {
         return;
     }
 
-    logger.logDebug() << LOGS::FSM << "Received message of size: " << length << std::endl;
-    bgp_packet pkt { buffer.begin(), length };
-    auto bgp_header = pkt.get_header();
-    if( std::any_of( bgp_header->marker.begin(), bgp_header->marker.end(), []( uint8_t el ) { return el != 0xFF; } ) ) {
-        logger.logError() << LOGS::FSM << "Wrong BGP marker in header!" << std::endl;
-        return;
+    logger.logInfo() << LOGS::FSM << "Received message of size: " << length << std::endl;
+
+    std::list<bgp_packet> pkts;
+    auto pos = 0;
+    while( pos < length ) {
+        auto header = reinterpret_cast<bgp_header*>( buffer.data() + pos );
+        auto len = header->length.native();
+        logger.logInfo() << LOGS::FSM << "Next packet in stream with size: " << len << std::endl;
+        if( ( pos + len ) > length ) {
+            break;
+        }
+        pkts.emplace_back( buffer.data() + pos, len );
+        pos += len;
     }
-    switch( bgp_header->type ) {
-    case bgp_type::OPEN:
-        rx_open( pkt );
-        break;
-    case bgp_type::KEEPALIVE:
-        rx_keepalive( pkt );
-        break;
-    case bgp_type::UPDATE:
-        rx_update( pkt );
-        break;
-    case bgp_type::NOTIFICATION:
-        logger.logInfo() << LOGS::FSM << "NOTIFICATION message" << std::endl;
-        break;
-    case bgp_type::ROUTE_REFRESH:
-        logger.logInfo() << LOGS::FSM << "ROUTE_REFRESH message" << std::endl;
-        break;
+
+    for( auto &pkt: pkts ) {
+        auto bgp_header = pkt.get_header();
+        if( std::any_of( bgp_header->marker.begin(), bgp_header->marker.end(), []( uint8_t el ) { return el != 0xFF; } ) ) {
+            logger.logError() << LOGS::FSM << "Wrong BGP marker in header!" << std::endl;
+            return;
+        }
+        switch( bgp_header->type ) {
+        case bgp_type::OPEN:
+            rx_open( pkt );
+            break;
+        case bgp_type::KEEPALIVE:
+            rx_keepalive( pkt );
+            break;
+        case bgp_type::UPDATE:
+            rx_update( pkt );
+            break;
+        case bgp_type::NOTIFICATION:
+            logger.logInfo() << LOGS::FSM << "NOTIFICATION message" << std::endl;
+            break;
+        case bgp_type::ROUTE_REFRESH:
+            logger.logInfo() << LOGS::FSM << "ROUTE_REFRESH message" << std::endl;
+            break;
+        }
     }
     do_read();
 }

@@ -9,8 +9,12 @@ using prefix_v4 = boost::asio::ip::network_v4;
 #include "fsm.hpp"
 #include "packet.hpp"
 #include "config.hpp"
+#include "log.hpp"
+#include "string_utils.hpp"
 
 using prefix_v4 = boost::asio::ip::network_v4;
+
+extern Logger logger;
 
 bgp_path::bgp_path( std::shared_ptr<std::vector<path_attr_t>> a, std::shared_ptr<bgp_fsm> s ):
     attrs( std::move( a ) ),
@@ -67,6 +71,7 @@ void bgp_table_v4::add_path( prefix_v4 prefix, std::vector<path_attr_t> attr, st
         if( prefixIt->second.source != nei ) {
             continue;
         }
+        prefixIt->second.time = std::chrono::system_clock::now();
         prefixIt->second.attrs.reset();
         prefixIt->second.attrs = std::make_shared<std::vector<path_attr_t>>( std::move( attr ) );
         return;
@@ -123,19 +128,42 @@ void bgp_table_v4::best_path_selection() {
         path.isBest = false;
 
         if( best != currentIt ) {
-            if( currentIt->second.get_local_pref() > best->second.get_local_pref() ) {
-                best = currentIt; continue;
+            try {
+                if( currentIt->second.get_local_pref() > best->second.get_local_pref() ) {
+                    best = currentIt; continue;
+                }
+            } catch( std::exception &e ) {
+                logger.logError() << LOGS::TABLE << e.what() << std::endl;
             }
-            if( currentIt->second.get_as_path().size() < best->second.get_as_path().size() ) {
-                best = currentIt; continue;
+
+            try {
+                if( currentIt->second.get_as_path().size() < best->second.get_as_path().size() ) {
+                    best = currentIt; continue;
+                }
+            } catch( std::exception &e ) {
+                logger.logError() << LOGS::TABLE << e.what() << std::endl;
             }
-            if( currentIt->second.get_origin() < best->second.get_origin() ) {
-                best = currentIt; continue;
+
+            try {
+                if( currentIt->second.get_origin() < best->second.get_origin() ) {
+                    best = currentIt; continue;
+                }
+            } catch( std::exception &e ) {
+                logger.logError() << LOGS::TABLE << e.what() << std::endl;
             }
-            if( currentIt->second.get_med() > best->second.get_med() ) {
-                best = currentIt; continue;
+
+            try {
+                if( currentIt->second.get_med() > best->second.get_med() ) {
+                    best = currentIt; continue;
+                }
+            } catch( std::exception &e ) {
+                logger.logError() << LOGS::TABLE << e.what() << std::endl;
             }
             // TODO: other BPS conditionds
         }
+    }
+
+    if( best == table.end() ) {
+        best->second.isBest = true;
     }
 }

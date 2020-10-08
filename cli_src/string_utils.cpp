@@ -55,7 +55,8 @@ std::ostream& operator<<( std::ostream &os, const Show_Table_Resp &msg ) {
     os << "AS Path";
     os << std::endl;
     for( auto const &entry: msg.entries ) {
-        os << std::setw( 20 ) << entry.prefix;
+        os << std::setw( 2 ) << ( entry.best ? '*' : ' ' );
+        os << std::setw( 18 ) << entry.prefix;
         os << std::setw( 16 ) << entry.nexthop;
         os << std::setw( 16 ) << entry.local_pref;
         os << std::setw( 30 ) << entry.time;

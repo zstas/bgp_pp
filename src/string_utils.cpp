@@ -34,6 +34,7 @@ std::ostream& operator<<( std::ostream &os, const LOGS &l ) {
     case LOGS::CONNECTION: return os << "[CONNECTION] ";
     case LOGS::CONFIGURATION: return os << "[CONFIG] ";
     case LOGS::CLI: return os << "[CLI] ";
+    case LOGS::TABLE: return os << "[TABLE] ";
     }
     return os;
 }

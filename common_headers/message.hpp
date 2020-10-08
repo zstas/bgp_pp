@@ -46,10 +46,11 @@ struct Show_Table_Req {
 struct BGP_Entry {
     std::string prefix;
     std::string nexthop;
-    uint32_t local_pref;
+    uint32_t local_pref { 0U };
     std::string source;
     std::string time;
     std::string as_path;
+    bool best { false };
 
     template<class Archive>
     void serialize( Archive &archive, const unsigned int version ) {
@@ -59,6 +60,7 @@ struct BGP_Entry {
         archive & source;
         archive & time;
         archive & as_path;
+        archive & best;
     }
 };
 
