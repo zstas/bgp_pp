@@ -18,6 +18,7 @@ using nlri = prefix_v4;
 struct bgp_neighbour_v4;
 struct GlobalConf;
 struct bgp_packet;
+struct bgp_cap_t;
 
 #include "table.hpp"
 
@@ -35,6 +36,7 @@ struct bgp_fsm : public std::enable_shared_from_this<bgp_fsm> {
     GlobalConf &gconf;
     bgp_neighbour_v4 &conf;
     bgp_table_v4 &table;
+    std::vector<bgp_cap_t> caps;
 
     std::array<uint8_t,65535> buffer;
     std::optional<socket_tcp> sock;

@@ -24,6 +24,25 @@ enum class AS_PATH_SEGMENT_TYPE : uint8_t {
     AS_SEQUENCE = 2,
 };
 
+enum class OPT_PARAM_TYPE : uint8_t {
+    CAP = 2,
+};
+
+enum class BGP_CAP_CODE : uint8_t {
+    MPBGP = 1,
+    ROUTE_REFRESH = 2,
+    OUTBOUND_ROUTE_FILTERING = 3,
+    ENH_NH_ENCODING = 5,
+    BGP_EXT_MESSAGE = 6,
+    BGP_SEC = 7,
+    MULTIPLE_LABELS = 8,
+    GRACEFUL_RESTART = 64,
+    FOUR_OCT_AS = 65,
+    ADD_PATH = 69,
+    ENH_ROUTE_REFRESH = 70,
+    FQDN = 73,
+};
+
 struct as_path_header {
     AS_PATH_SEGMENT_TYPE type;
     uint8_t len;
@@ -79,12 +98,34 @@ struct bgp_header {
     bgp_type type;
 }__attribute__((__packed__));
 
+struct bgp_opt_param {
+    OPT_PARAM_TYPE type;
+    uint8_t length;
+    uint8_t value[0];
+}__attribute__((__packed__));
+
+struct bgp_cap {
+    BGP_CAP_CODE code;
+    uint8_t len;
+    uint8_t data[0];
+}__attribute__((__packed__));
+
+static_assert( sizeof( bgp_cap ) == 2, "bgp_cap header should be 2 bytes" );
+
+struct bgp_cap_t {
+    bgp_cap_t( const bgp_cap *cap );
+    BGP_CAP_CODE code;
+    std::vector<uint8_t> data;
+};
+
 struct bgp_open {
     uint8_t version;
     BE16 my_as;
     BE16 hold_time;
     BE32 bgp_id;
     uint8_t len;
+    uint8_t data[0];
+    std::vector<bgp_cap_t> parse_capabilites() const;
 }__attribute__((__packed__));
 
 struct bgp_packet {

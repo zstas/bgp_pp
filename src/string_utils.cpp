@@ -151,3 +151,40 @@ std::ostream& operator<<( std::ostream &os, const CONTENT &cont ) {
     }
     return os;
 }
+
+std::ostream& operator<<( std::ostream &os, const BGP_CAP_CODE &cap ) {
+    switch( cap ) {
+    case BGP_CAP_CODE::MPBGP: os << "MPBGP"; break;
+    case BGP_CAP_CODE::ROUTE_REFRESH: os << "ROUTE_REFRESH"; break;
+    case BGP_CAP_CODE::OUTBOUND_ROUTE_FILTERING: os << "OUTBOUND_ROUTE_FILTERING"; break;
+    case BGP_CAP_CODE::ENH_NH_ENCODING: os << "ENH_NH_ENCODING"; break;
+    case BGP_CAP_CODE::BGP_EXT_MESSAGE: os << "BGP_EXT_MESSAGE"; break;
+    case BGP_CAP_CODE::BGP_SEC: os << "BGP_SEC"; break;
+    case BGP_CAP_CODE::MULTIPLE_LABELS: os << "MULTIPLE_LABELS"; break;
+    case BGP_CAP_CODE::GRACEFUL_RESTART: os << "GRACEFUL_RESTART"; break;
+    case BGP_CAP_CODE::FOUR_OCT_AS: os << "FOUR_OCT_AS"; break;
+    case BGP_CAP_CODE::ADD_PATH: os << "ADD_PATH"; break;
+    case BGP_CAP_CODE::ENH_ROUTE_REFRESH: os << "ENH_ROUTE_REFRESH"; break;
+    case BGP_CAP_CODE::FQDN: os << "FQDN"; break;
+    default: os << "Unknown capability with code " << static_cast<int>( cap ) ; break;
+    }
+    return os;
+}
+
+std::ostream& operator<<( std::ostream &os, const bgp_cap_t &cap ) {
+    os << "CAP: " << cap.code;
+    os << " Value: ";
+    switch( cap.code ) {
+    case BGP_CAP_CODE::FQDN: {
+        auto host_it = cap.data.begin();
+        auto host = std::string( host_it + 1, host_it + 1 + *host_it );
+        auto domain_it = cap.data.begin() + 1 + *host_it;
+        auto domain = std::string( domain_it + 1, domain_it + 1 + *domain_it );
+        os << "Host: " << host << " Domain: " << domain;
+        break;
+    }
+    default:
+        os << cap.data;
+    }
+    return os;
+}

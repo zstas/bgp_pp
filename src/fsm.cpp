@@ -66,6 +66,11 @@ void bgp_fsm::rx_open( bgp_packet &pkt ) {
     logger.logInfo() << LOGS::FSM << "Incoming OPEN packet from: " << sock->remote_endpoint().address().to_string() << std::endl;
     logger.logInfo() << LOGS::PACKET << open << std::endl;
 
+    caps = open->parse_capabilites();
+    for( auto const &cap: caps ) {
+        logger.logInfo() << LOGS::PACKET << cap << std::endl;
+    }
+
     if( open->my_as.native() != conf.remote_as ) {
         logger.logError() << LOGS::FSM << "Incorrect AS: " << open->my_as.native() << ", we expected: " << conf.remote_as << std::endl;
         sock->close();

@@ -54,6 +54,28 @@ std::vector<uint32_t> path_attr_t::parse_as_path() const {
     return list;
 }
 
+bgp_cap_t::bgp_cap_t( const bgp_cap *cap ):
+    code( cap->code ),
+    data( (uint8_t*)cap->data, (uint8_t*)cap->data + cap->len )
+{}
+
+std::vector<bgp_cap_t> bgp_open::parse_capabilites() const {
+    std::vector<bgp_cap_t> caps;
+
+    auto offset = 0;
+    while( offset < len ) {
+        auto param_head = reinterpret_cast<const bgp_opt_param*>( data + offset );
+        offset += param_head->length + sizeof( bgp_opt_param );
+        if( param_head->type != OPT_PARAM_TYPE::CAP ) {
+            continue;
+        }
+        auto cap_head = reinterpret_cast<const bgp_cap*>( (uint8_t*)param_head->value );
+        caps.emplace_back( cap_head );
+    }
+
+    return caps;
+}
+
 bgp_packet::bgp_packet( uint8_t *begin, std::size_t l ):
     data( begin ),
     length( l )
