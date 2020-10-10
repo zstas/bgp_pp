@@ -16,6 +16,7 @@ using prefix_v4 = boost::asio::ip::network_v4;
 #include "log.hpp"
 #include "string_utils.hpp"
 #include "message.hpp"
+#include "config.hpp"
 
 extern Logger logger;
 
@@ -50,7 +51,31 @@ void CLI_Session::on_receive( const boost::system::error_code &ec, std::size_t l
     outMsg.cont = inMsg.cont;
 
     switch( inMsg.cont ) {
-    case CONTENT::SHOW_NEI: break;
+    case CONTENT::SHOW_NEI: {
+        auto req = deserialize<Show_Neighbour_Req>( inMsg.data );
+        // TODO: handle req
+        Show_Neighbour_Resp resp;
+        for( auto const &[ address, ptr ]: runtime.neighbours ) {
+            BGP_Neighbour_Info info;
+            info.address = address.to_string();
+            if( !ptr ) {
+                continue;
+            }
+            info.hold_time = ptr->HoldTime;
+            info.remote_as = ptr->conf.remote_as;
+            if( ptr->sock ) {
+                info.socket = ptr->sock.value().native_handle();
+            }
+            for( auto const &cap: ptr->caps ) {
+                std::stringstream ss;
+                ss << cap.code;
+                info.caps.push_back( ss.str() );
+            }
+            resp.entries.push_back( info );
+        }
+        outMsg.data = serialize( resp );
+        break;
+    }
     case CONTENT::SHOW_TABLE: {
         auto req = deserialize<Show_Table_Req>( inMsg.data );
         // TODO: handle req
@@ -82,12 +107,12 @@ void CLI_Session::on_receive( const boost::system::error_code &ec, std::size_t l
             resp.entries.push_back( entry );
         }
         outMsg.data = serialize( resp );
-        auto outData = serialize( outMsg );
-        sock.send( boost::asio::buffer( outData ) );
         break;
     }
     case CONTENT::SHOW_VER: break;
     }
+    auto outData = serialize( outMsg );
+    sock.send( boost::asio::buffer( outData ) );
     start();
 }
 

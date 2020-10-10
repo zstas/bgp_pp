@@ -66,3 +66,31 @@ std::ostream& operator<<( std::ostream &os, const Show_Table_Resp &msg ) {
     os.flags( flags );
     return os;
 }
+
+std::ostream& operator<<( std::ostream &os, const Show_Neighbour_Resp &msg ) {
+    auto flags = os.flags();
+    os << std::left;
+    os << std::setw( 20 ) << "Address";
+    os << std::setw( 10 ) << "RemoteAS";
+    os << std::setw( 10 ) << "HoldT";
+    os << std::setw( 10 ) << "Sock";
+    os << "Capabilites";
+    os << std::endl;
+    for( auto const &entry: msg.entries ) {
+        os << std::setw( 18 ) << entry.address;
+        os << std::setw( 10 ) << entry.remote_as;
+        os << std::setw( 10 ) << entry.hold_time;
+        os << std::setw( 10 );
+        if( entry.socket.has_value() ) {
+            os << entry.socket.value();
+        } else {
+            os << "N/A";
+        }
+        for( auto const &cap: entry.caps ) {
+            os << cap << " ";
+        }
+        os << std::endl;
+    }
+    os.flags( flags );
+    return os;
+}

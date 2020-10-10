@@ -92,7 +92,12 @@ void CLI_Client::parse_cmd( const std::string &cmd ) {
     outMsg.type = TYPE::REQ;
     outMsg.cont = it->second;
     switch( it->second ) {
-    case CONTENT::SHOW_NEI: break;
+    case CONTENT::SHOW_NEI: {
+        auto args = cmd.substr( it->first.size() );
+        auto req = cmd_parse<Show_Neighbour_Req>( args );
+        outMsg.data = serialize( req );
+        break;
+    }
     case CONTENT::SHOW_VER: break;
     case CONTENT::SHOW_TABLE: {
         auto args = cmd.substr( it->first.size() );
@@ -111,7 +116,11 @@ void CLI_Client::parse_cmd( const std::string &cmd ) {
         return;
     }
     switch( inMsg.cont ) {
-    case CONTENT::SHOW_NEI: break;
+    case CONTENT::SHOW_NEI: {
+        auto resp = deserialize<Show_Neighbour_Resp>( inMsg.data );
+        std::cout << resp << std::endl;
+        break;
+    }
     case CONTENT::SHOW_VER: break;
     case CONTENT::SHOW_TABLE: {
         auto resp = deserialize<Show_Table_Resp>( inMsg.data );
@@ -123,5 +132,10 @@ void CLI_Client::parse_cmd( const std::string &cmd ) {
 
 template<>
 Show_Table_Req cmd_parse<Show_Table_Req>( const std::string &args ) {
+    return {};
+}
+
+template<>
+Show_Neighbour_Req cmd_parse<Show_Neighbour_Req>( const std::string &args ) {
     return {};
 }

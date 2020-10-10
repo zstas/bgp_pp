@@ -73,6 +73,41 @@ struct Show_Table_Resp {
     }
 };
 
+struct Show_Neighbour_Req {
+    boost::optional<std::string> address;
+
+    template<class Archive>
+    void serialize( Archive &archive, const unsigned int version ) {
+        archive & address;
+    }
+};
+
+struct BGP_Neighbour_Info {
+    std::string address;
+    uint32_t remote_as;
+    uint16_t hold_time;
+    std::vector<std::string> caps;
+    boost::optional<uint32_t> socket;
+
+    template<class Archive>
+    void serialize( Archive &archive, const unsigned int version ) {
+        archive & address;
+        archive & remote_as;
+        archive & hold_time;
+        archive & caps;
+        archive & socket;
+    }
+};
+
+struct Show_Neighbour_Resp {
+    std::vector<BGP_Neighbour_Info> entries;
+
+    template<class Archive>
+    void serialize( Archive &archive, const unsigned int version ) {
+        archive & entries;
+    }
+};
+
 static auto const ser_flags = boost::archive::no_header | boost::archive::no_tracking;
 
 template<typename T>

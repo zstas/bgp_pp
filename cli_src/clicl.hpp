@@ -6,6 +6,7 @@
 
 enum class CONTENT: uint8_t;
 struct Show_Table_Req;
+struct Show_Neighbour_Req;
 
 enum class TOKEN: uint8_t {
     CONT,
@@ -44,5 +45,8 @@ T cmd_parse( const std::string &args );
 
 template<>
 Show_Table_Req cmd_parse<Show_Table_Req>( const std::string &args );
+
+template<>
+Show_Neighbour_Req cmd_parse<Show_Neighbour_Req>( const std::string &args );
 
 #endif
