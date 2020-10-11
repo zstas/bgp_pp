@@ -73,6 +73,7 @@ struct path_attr_t {
     PATH_ATTRIBUTE type;
     std::vector<uint8_t> bytes;
 
+    path_attr_t() = default;
     path_attr_t( path_attr_header *header );
 
     uint32_t get_u32() const;

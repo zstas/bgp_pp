@@ -66,6 +66,23 @@ bgp_table_v4::bgp_table_v4( GlobalConf &c ):
 {}
 
 void bgp_table_v4::add_path( prefix_v4 prefix, std::vector<path_attr_t> attr, std::shared_ptr<bgp_fsm> nei ) {
+    // Add local preference attribute, if it doesn't exist
+    if(
+        auto it = std::find_if(
+            attr.begin(),
+            attr.end(),
+            []( const path_attr_t &v ) {
+                return v.type == PATH_ATTRIBUTE::LOCAL_PREF;
+            }
+        ); it == attr.end() )
+    {
+        path_attr_t lp;
+        uint32_t def_lp = bswap( (uint32_t)100 );
+        lp.type = PATH_ATTRIBUTE::LOCAL_PREF;
+        lp.bytes.resize( sizeof( def_lp ) );
+        std::memcpy( lp.bytes.data(), &def_lp, sizeof( def_lp ) );
+        attr.push_back( std::move( lp ) );
+    }
     // If we already have path from this neighbour
     for( auto prefixIt = table.find( prefix ); prefixIt != table.end(); prefixIt++ ) {
         if( prefixIt->second.source != nei ) {
