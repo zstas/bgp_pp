@@ -132,6 +132,8 @@ void bgp_table_v4::best_path_selection() {
         auto const &prefix = currentIt->first;
         auto &path = currentIt->second;
 
+        path.isValid = true;
+
         if( current_prefix != prefix ) {
             current_prefix = prefix;
             best->second.isBest = true;
@@ -140,9 +142,12 @@ void bgp_table_v4::best_path_selection() {
 
         if( best == table.end() ) {
             best = currentIt;
+            path.isBest = true;
         }
 
-        path.isBest = false;
+        if( best != currentIt ) {
+            path.isBest = false;
+        }
 
         if( best != currentIt ) {
             try {

@@ -104,6 +104,9 @@ void CLI_Session::on_receive( const boost::system::error_code &ec, std::size_t l
             if( path.isBest ) {
                 entry.best = true;
             }
+            if( path.isValid ) {
+                entry.valid = true;
+            }
             resp.entries.push_back( entry );
         }
         outMsg.data = serialize( resp );

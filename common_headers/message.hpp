@@ -51,6 +51,7 @@ struct BGP_Entry {
     std::string time;
     std::string as_path;
     bool best { false };
+    bool valid { false };
 
     template<class Archive>
     void serialize( Archive &archive, const unsigned int version ) {
@@ -61,6 +62,7 @@ struct BGP_Entry {
         archive & time;
         archive & as_path;
         archive & best;
+        archive & valid;
     }
 };
 
