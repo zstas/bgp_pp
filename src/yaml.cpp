@@ -9,23 +9,22 @@ using prefix_v4 = boost::asio::ip::network_v4;
 
 YAML::Node YAML::convert<GlobalConf>::encode(const GlobalConf& rhs) {
     Node node;
-    node[ "listen_on_port" ]  = rhs.listen_on_port;
-    node[ "my_as" ]           = rhs.my_as;
-    node[ "hold_time" ]       = rhs.hold_time;
-    node[ "bgp_router_id" ]   = rhs.bgp_router_id.to_string();
-    node[ "neighbours" ]      = rhs.neighbours;
+    node[ "listen_on_port" ]   = rhs.listen_on_port;
+    node[ "my_as" ]            = rhs.my_as;
+    node[ "hold_time" ]        = rhs.hold_time;
+    node[ "bgp_router_id" ]    = rhs.bgp_router_id.to_string();
+    node[ "neighbours" ]       = rhs.neighbours;
+    node[ "originate_routes" ] = rhs.originate_routes;
     return node;
 }
 
 bool YAML::convert<GlobalConf>::decode(const YAML::Node& node, GlobalConf& rhs) {
-    // if(!node.IsSequence() || node.size() != 3) {
-    //     return false;
-    // }
-    rhs.listen_on_port  = node[ "listen_on_port" ].as<uint16_t>();
-    rhs.my_as           = node[ "my_as" ].as<uint32_t>();
-    rhs.hold_time       = node[ "hold_time" ].as<uint16_t>();
-    rhs.bgp_router_id   = address_v4::from_string( node["bgp_router_id"].as<std::string>() );
-    rhs.neighbours      = node[ "neighbours" ].as<std::list<bgp_neighbour_v4>>();
+    rhs.listen_on_port   = node[ "listen_on_port" ].as<uint16_t>();
+    rhs.my_as            = node[ "my_as" ].as<uint32_t>();
+    rhs.hold_time        = node[ "hold_time" ].as<uint16_t>();
+    rhs.bgp_router_id    = address_v4::from_string( node["bgp_router_id"].as<std::string>() );
+    rhs.neighbours       = node[ "neighbours" ].as<std::list<bgp_neighbour_v4>>();
+    rhs.originate_routes = node[ "originate_routes" ].as<std::list<OrigEntry>>();
     return true;
 } 
 
@@ -83,6 +82,23 @@ bool YAML::convert<RoutePolicy>::decode(const YAML::Node& node, RoutePolicy& rhs
     }
     if( node[ "set_localpref"].IsDefined() ) {
         rhs.set_localpref.emplace( node[ "set_localpref" ].as<uint32_t>() );
+    }
+    return true;
+} 
+
+YAML::Node YAML::convert<OrigEntry>::encode(const OrigEntry& rhs) {
+    Node node;
+    node[ "prefix" ] = rhs.prefix.to_string();
+    if( rhs.policy_name.has_value() ) {
+        node[ "policy_name" ] = rhs.policy_name.value();
+    }
+    return node;
+}
+
+bool YAML::convert<OrigEntry>::decode(const YAML::Node& node, OrigEntry& rhs) {
+    rhs.prefix = boost::asio::ip::make_network_v4( node[ "prefix" ].as<std::string>() );
+    if( node[ "policy_name"].IsDefined() ) {
+        rhs.policy_name.emplace( node[ "policy_name" ].as<std::string>() );
     }
     return true;
 } 

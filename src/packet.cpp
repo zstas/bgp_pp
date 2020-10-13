@@ -186,3 +186,21 @@ bool operator==( const path_attr_t &lhs, const path_attr_t &rhs ) {
             lhs.type == rhs.type &&
             lhs.bytes == rhs.bytes;
 }
+
+void path_attr_t::make_local_pref( uint32_t val ) {
+    val = bswap( val );
+    type = PATH_ATTRIBUTE::LOCAL_PREF;
+    bytes.resize( sizeof( val ) );
+    std::memcpy( bytes.data(), &val, sizeof( val ) );
+}
+
+void path_attr_t::make_origin( ORIGIN o ) {
+    type = PATH_ATTRIBUTE::ORIGIN;
+    bytes.push_back( static_cast<uint8_t>( o ) );
+}
+
+void path_attr_t::make_nexthop( address_v4 a ) {
+    type = PATH_ATTRIBUTE::NEXT_HOP;
+    auto temp = a.to_bytes();
+    bytes = { temp.begin(), temp.end() };
+}

@@ -76,6 +76,10 @@ struct path_attr_t {
     path_attr_t() = default;
     path_attr_t( path_attr_header *header );
 
+    void make_local_pref( uint32_t val );
+    void make_origin( ORIGIN o );
+    void make_nexthop( address_v4 a );
+
     uint32_t get_u32() const;
     std::vector<uint32_t> parse_as_path() const;
 };

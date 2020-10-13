@@ -30,8 +30,16 @@ static void config_init( const std::string &path ) {
     bgp1.address = address_v4::from_string( "127.0.0.1" );
     new_conf.neighbours.emplace_back( bgp1 );
 
-    bgp1.address = address_v4::from_string( "8.8.8.8" );
+    bgp1.address = address_v4::from_string( "1.1.1.1" );
     new_conf.neighbours.emplace_back( bgp1 );
+
+    OrigEntry orig;
+    orig.prefix = boost::asio::ip::make_network_v4( "1.2.3.4/32" );
+    new_conf.originate_routes.push_back( orig );
+
+    orig.prefix = boost::asio::ip::make_network_v4( "6.6.6.6/32" );
+    orig.policy_name.emplace( "route_policy1.yaml" );
+    new_conf.originate_routes.push_back( orig );
 
     YAML::Node node;
     node = new_conf;

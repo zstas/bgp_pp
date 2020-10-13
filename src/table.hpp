@@ -38,8 +38,8 @@ struct bgp_table_v4 {
     bgp_table_v4( GlobalConf &c );
     GlobalConf &conf;
     std::multimap<prefix_v4,bgp_path> table;
-    void add_path( prefix_v4 prefix, std::vector<path_attr_t> attr, std::shared_ptr<bgp_fsm> nei );
-    void del_path( prefix_v4 prefix, std::shared_ptr<bgp_fsm> nei );
+    void add_path( const prefix_v4 &prefix, std::vector<path_attr_t> attr, std::shared_ptr<bgp_fsm> nei );
+    void del_path( const prefix_v4 &prefix, std::shared_ptr<bgp_fsm> nei );
     void best_path_selection();
 };
 

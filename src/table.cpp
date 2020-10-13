@@ -63,9 +63,26 @@ std::vector<uint32_t> bgp_path::get_as_path() const {
 
 bgp_table_v4::bgp_table_v4( GlobalConf &c ):
     conf( c )
-{}
+{
+    for( auto &r: conf.originate_routes ) {
+        std::vector<path_attr_t> attrs;
 
-void bgp_table_v4::add_path( prefix_v4 prefix, std::vector<path_attr_t> attr, std::shared_ptr<bgp_fsm> nei ) {
+        path_attr_t attr;
+        attr.make_local_pref( 100 );
+        attrs.push_back( attr );
+
+        attr.make_origin( ORIGIN::IGP );
+        attrs.push_back( attr );
+
+        attr.make_nexthop( boost::asio::ip::make_address_v4( "0.0.0.0" ) );
+        attrs.push_back( attr );
+
+        // TODO: route policy
+        add_path( r.prefix, attrs, nullptr );
+    }
+}
+
+void bgp_table_v4::add_path( const prefix_v4 &prefix, std::vector<path_attr_t> attr, std::shared_ptr<bgp_fsm> nei ) {
     // Add local preference attribute, if it doesn't exist
     if(
         auto it = std::find_if(
@@ -77,10 +94,7 @@ void bgp_table_v4::add_path( prefix_v4 prefix, std::vector<path_attr_t> attr, st
         ); it == attr.end() )
     {
         path_attr_t lp;
-        uint32_t def_lp = bswap( (uint32_t)100 );
-        lp.type = PATH_ATTRIBUTE::LOCAL_PREF;
-        lp.bytes.resize( sizeof( def_lp ) );
-        std::memcpy( lp.bytes.data(), &def_lp, sizeof( def_lp ) );
+        lp.make_local_pref( 100 );
         attr.push_back( std::move( lp ) );
     }
     // If we already have path from this neighbour
@@ -114,7 +128,7 @@ void bgp_table_v4::add_path( prefix_v4 prefix, std::vector<path_attr_t> attr, st
     }
 }
 
-void bgp_table_v4::del_path( prefix_v4 prefix, std::shared_ptr<bgp_fsm> nei ) {
+void bgp_table_v4::del_path( const prefix_v4 &prefix, std::shared_ptr<bgp_fsm> nei ) {
     for( auto prefixIt = table.find( prefix ); prefixIt != table.end(); prefixIt++ ) {
         if( prefixIt->second.source != nei ) {
             continue;

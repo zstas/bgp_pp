@@ -4,6 +4,7 @@
 struct GlobalConf;
 struct bgp_neighbour_v4;
 struct RoutePolicy;
+struct OrigEntry;
 
 namespace YAML {
     template<>
@@ -22,6 +23,12 @@ namespace YAML {
     struct convert<RoutePolicy> {
         static Node encode( const RoutePolicy &rhs );
         static bool decode( const Node &node, RoutePolicy &rhs );
+    };
+
+    template<>
+    struct convert<OrigEntry> {
+        static Node encode( const OrigEntry &rhs );
+        static bool decode( const Node &node, OrigEntry &rhs );
     };
 }
 
