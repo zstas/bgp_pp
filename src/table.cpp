@@ -98,7 +98,8 @@ void bgp_table_v4::add_path( const prefix_v4 &prefix, std::vector<path_attr_t> a
         attr.push_back( std::move( lp ) );
     }
     // If we already have path from this neighbour
-    for( auto prefixIt = table.find( prefix ); prefixIt != table.end(); prefixIt++ ) {
+    auto range = table.equal_range( prefix );
+    for( auto prefixIt = range.first; prefixIt != range.second; prefixIt++ ) {
         if( prefixIt->second.source != nei ) {
             continue;
         }
