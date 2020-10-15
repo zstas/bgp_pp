@@ -1,6 +1,7 @@
 #include <memory>
 #include <vector>
 #include <tuple>
+#include <set>
 #include <boost/asio/ip/network_v4.hpp>
 #include <boost/asio/posix/stream_descriptor.hpp>
 
@@ -41,7 +42,11 @@ void bgp_fsm::place_connection( socket_tcp s ) {
     auto const &endpoint = sock->remote_endpoint();
     logger.logInfo() << LOGS::FSM << "Incoming connection: " << endpoint.address().to_string() << ":" << endpoint.port() << std::endl;
     do_read();
-    tx_open();
+    std::set<bgp_cap_t> capabilites;
+    bgp_cap_t rr;
+    rr.make_route_refresh();
+    capabilites.emplace( rr );
+    tx_open( capabilites );
 }
 
 void bgp_fsm::start_keepalive_timer() {
@@ -85,16 +90,23 @@ void bgp_fsm::rx_open( bgp_packet &pkt ) {
     state = FSM_STATE::OPENCONFIRM;
 }
 
-void bgp_fsm::tx_open() {
+void bgp_fsm::tx_open( const std::set<bgp_cap_t> &caps ) {
+    std::vector<uint8_t> caps_bytes;
+    for( auto const &c: caps ) {
+        auto b = c.toBytes();
+        caps_bytes.insert( caps_bytes.end(), b.begin(), b.end() );
+    }
+    
     auto len = sizeof( bgp_header ) + sizeof( bgp_open );
     auto pkt_buf = std::make_shared<std::vector<uint8_t>>();
+    pkt_buf->reserve( len + caps_bytes.size() );
     pkt_buf->resize( len );
     bgp_packet pkt { pkt_buf->data(), pkt_buf->size() };
 
     // header
     auto header = pkt.get_header();
     header->type = bgp_type::OPEN;
-    header->length = len;
+    header->length = len + caps_bytes.size();
     std::fill( header->marker.begin(), header->marker.end(), 0xFF );
 
     // open body
@@ -107,7 +119,9 @@ void bgp_fsm::tx_open() {
     } else {
         open->hold_time = gconf.hold_time;
     }
-    open->len = 0;
+    open->len = caps_bytes.size();
+
+    pkt_buf->insert( pkt_buf->end(), caps_bytes.begin(), caps_bytes.end() );
 
     // send this msg
     sock->async_send( boost::asio::buffer( *pkt_buf ), std::bind( &bgp_fsm::on_send, shared_from_this(), pkt_buf, std::placeholders::_1, std::placeholders::_2 ) );

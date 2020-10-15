@@ -59,6 +59,31 @@ bgp_cap_t::bgp_cap_t( const bgp_cap *cap ):
     data( (uint8_t*)cap->data, (uint8_t*)cap->data + cap->len )
 {}
 
+void bgp_cap_t::make_route_refresh() {
+    data.clear();
+    code = BGP_CAP_CODE::ROUTE_REFRESH;
+}
+
+bool bgp_cap_t::operator<( const bgp_cap_t &r ) const {
+    return std::tie( code, data ) < std::tie( r.code, r.data );
+}
+
+std::vector<uint8_t> bgp_cap_t::toBytes() const {
+    std::vector<uint8_t> out;
+
+    out.reserve( sizeof( bgp_opt_param ) + sizeof( bgp_cap ) + data.size() );
+    out.resize( sizeof( bgp_opt_param ) + sizeof( bgp_cap ) );
+    auto param_head = reinterpret_cast<bgp_opt_param*>( out.data() );
+    param_head->type = OPT_PARAM_TYPE::CAP;
+    param_head->length = sizeof( bgp_cap ) + data.size();
+    auto cap_head = reinterpret_cast<bgp_cap*>( (uint8_t*)param_head->value );
+    cap_head->code = code;
+    cap_head->len = data.size();
+    out.insert( out.end(), data.begin(), data.end() );
+
+    return out;
+}
+
 std::vector<bgp_cap_t> bgp_open::parse_capabilites() const {
     std::vector<bgp_cap_t> caps;
 

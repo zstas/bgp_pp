@@ -118,9 +118,14 @@ struct bgp_cap {
 static_assert( sizeof( bgp_cap ) == 2, "bgp_cap header should be 2 bytes" );
 
 struct bgp_cap_t {
+    bgp_cap_t() = default;
     bgp_cap_t( const bgp_cap *cap );
     BGP_CAP_CODE code;
     std::vector<uint8_t> data;
+
+    bool operator<( const bgp_cap_t &r ) const;
+    void make_route_refresh();
+    std::vector<uint8_t> toBytes() const;
 };
 
 struct bgp_open {

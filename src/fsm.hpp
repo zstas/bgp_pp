@@ -2,6 +2,7 @@
 #define FSM_HPP_
 
 #include <list>
+#include <set>
 #include <boost/asio.hpp>
 #include <boost/asio/steady_timer.hpp>
 
@@ -65,7 +66,7 @@ struct bgp_fsm : public std::enable_shared_from_this<bgp_fsm> {
     void do_read();
 
     void rx_open( bgp_packet &pkt );
-    void tx_open();
+    void tx_open( const std::set<bgp_cap_t> &caps );
 
     void rx_keepalive( bgp_packet &pkt );
     void tx_keepalive();
