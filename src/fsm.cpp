@@ -46,6 +46,12 @@ void bgp_fsm::place_connection( socket_tcp s ) {
     bgp_cap_t rr;
     rr.make_route_refresh();
     capabilites.emplace( rr );
+    rr.make_4byte_asn( gconf.my_as );
+    capabilites.emplace( rr );
+    rr.make_mp_bgp( BGP_AFI::IPv4, BGP_SAFI::UNICAST );
+    capabilites.emplace( rr );
+    rr.make_fqdn( "myhost", "mydomain" );
+    capabilites.emplace( rr );
     tx_open( capabilites );
 }
 

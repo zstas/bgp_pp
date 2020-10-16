@@ -64,6 +64,31 @@ void bgp_cap_t::make_route_refresh() {
     code = BGP_CAP_CODE::ROUTE_REFRESH;
 }
 
+void bgp_cap_t::make_fqdn( const std::string &host, const std::string &domain ) {
+    data.clear();
+    code = BGP_CAP_CODE::FQDN;
+    data.insert( data.end(), host.size() );
+    data.insert( data.end(), host.begin(), host.end() );
+    data.insert( data.end(), domain.size() );
+    data.insert( data.end(), domain.begin(), domain.end() );
+}
+
+void bgp_cap_t::make_4byte_asn( uint32_t asn ) {
+    data.clear();
+    code = BGP_CAP_CODE::FOUR_OCT_AS;
+    data.resize( 4 );
+    *reinterpret_cast<uint32_t*>( data.data() ) = bswap( asn );
+}
+
+void bgp_cap_t::make_mp_bgp( BGP_AFI afi ,BGP_SAFI safi ) {
+    data.clear();
+    code = BGP_CAP_CODE::MPBGP;
+    data.resize( 4 );
+    *reinterpret_cast<uint16_t*>( data.data() ) = bswap( static_cast<uint16_t>( afi ) );
+    data[ 2 ] = 0;
+    data[ 3 ] = static_cast<uint8_t>( safi );
+}
+
 bool bgp_cap_t::operator<( const bgp_cap_t &r ) const {
     return std::tie( code, data ) < std::tie( r.code, r.data );
 }

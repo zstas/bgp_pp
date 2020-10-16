@@ -43,6 +43,18 @@ enum class BGP_CAP_CODE : uint8_t {
     FQDN = 73,
 };
 
+enum class BGP_AFI : uint16_t {
+    IPv4 = 1,
+    IPv6 = 2,
+    L2VPN = 25,
+    BGP_LS = 16388,
+};
+
+enum class BGP_SAFI : uint8_t {
+    UNICAST = 1,
+    MULTICAST = 2,
+};
+
 struct as_path_header {
     AS_PATH_SEGMENT_TYPE type;
     uint8_t len;
@@ -125,6 +137,9 @@ struct bgp_cap_t {
 
     bool operator<( const bgp_cap_t &r ) const;
     void make_route_refresh();
+    void make_fqdn( const std::string &host, const std::string &domain );
+    void make_4byte_asn( uint32_t asn );
+    void make_mp_bgp( BGP_AFI afi ,BGP_SAFI safi );
     std::vector<uint8_t> toBytes() const;
 };
 
