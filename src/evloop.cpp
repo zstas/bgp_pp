@@ -25,7 +25,7 @@ EVLoop::EVLoop( boost::asio::io_context &i, GlobalConf &c ):
     accpt.async_accept( sock, std::bind( &EVLoop::on_accept, this, std::placeholders::_1 ) );
 }
 
-void EVLoop::on_accept( error_code ec ) {
+void EVLoop::on_accept( boost::system::error_code &ec ) {
     if( ec ) {
         logger.logError() << LOGS::EVENT_LOOP << "Error on accepting new connection: " << ec.message() << std::endl;
     }
@@ -38,4 +38,26 @@ void EVLoop::on_accept( error_code ec ) {
         nei_it->second->place_connection( std::move( sock ) );
     }
     accpt.async_accept( sock, std::bind( &EVLoop::on_accept, this, std::placeholders::_1 ) );
+}
+
+void EVLoop::schedule_updates( std::vector<nlri> &v ) {
+    for( auto const &n: v ) {
+        planning_updates.push_back( n );
+    }
+    send_updates.expires_from_now( std::chrono::seconds( 1 ) );
+    send_updates.async_wait( std::bind( &EVLoop::on_send_updates, this, std::placeholders::_1 ) );
+}
+
+void EVLoop::on_send_updates( boost::system::error_code &ec ) {
+    std::map<std::vector<nlri>,path_attr_t> pending_update;
+    for( auto const &n: planning_updates ) {
+
+    }
+    for( auto const &[ add, nei ]: neighbours ) {
+        // send updates only for eBGP neighbours
+        if( nei->conf.remote_as == conf.my_as ) {
+            continue;
+        }
+        // nei->tx_update();
+    }
 }

@@ -121,17 +121,17 @@ struct bgp_opt_param {
     uint8_t value[0];
 }__attribute__((__packed__));
 
-struct bgp_cap {
+struct bgp_cap_header {
     BGP_CAP_CODE code;
     uint8_t len;
     uint8_t data[0];
 }__attribute__((__packed__));
 
-static_assert( sizeof( bgp_cap ) == 2, "bgp_cap header should be 2 bytes" );
+static_assert( sizeof( bgp_cap_header ) == 2, "bgp_cap header should be 2 bytes" );
 
 struct bgp_cap_t {
     bgp_cap_t() = default;
-    bgp_cap_t( const bgp_cap *cap );
+    bgp_cap_t( const bgp_cap_header *cap );
     BGP_CAP_CODE code;
     std::vector<uint8_t> data;
 

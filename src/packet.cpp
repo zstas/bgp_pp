@@ -54,7 +54,7 @@ std::vector<uint32_t> path_attr_t::parse_as_path() const {
     return list;
 }
 
-bgp_cap_t::bgp_cap_t( const bgp_cap *cap ):
+bgp_cap_t::bgp_cap_t( const bgp_cap_header *cap ):
     code( cap->code ),
     data( (uint8_t*)cap->data, (uint8_t*)cap->data + cap->len )
 {}
@@ -96,12 +96,12 @@ bool bgp_cap_t::operator<( const bgp_cap_t &r ) const {
 std::vector<uint8_t> bgp_cap_t::toBytes() const {
     std::vector<uint8_t> out;
 
-    out.reserve( sizeof( bgp_opt_param ) + sizeof( bgp_cap ) + data.size() );
-    out.resize( sizeof( bgp_opt_param ) + sizeof( bgp_cap ) );
+    out.reserve( sizeof( bgp_opt_param ) + sizeof( bgp_cap_header ) + data.size() );
+    out.resize( sizeof( bgp_opt_param ) + sizeof( bgp_cap_header ) );
     auto param_head = reinterpret_cast<bgp_opt_param*>( out.data() );
     param_head->type = OPT_PARAM_TYPE::CAP;
-    param_head->length = sizeof( bgp_cap ) + data.size();
-    auto cap_head = reinterpret_cast<bgp_cap*>( (uint8_t*)param_head->value );
+    param_head->length = sizeof( bgp_cap_header ) + data.size();
+    auto cap_head = reinterpret_cast<bgp_cap_header*>( (uint8_t*)param_head->value );
     cap_head->code = code;
     cap_head->len = data.size();
     out.insert( out.end(), data.begin(), data.end() );
@@ -119,7 +119,7 @@ std::vector<bgp_cap_t> bgp_open::parse_capabilites() const {
         if( param_head->type != OPT_PARAM_TYPE::CAP ) {
             continue;
         }
-        auto cap_head = reinterpret_cast<const bgp_cap*>( (uint8_t*)param_head->value );
+        auto cap_head = reinterpret_cast<const bgp_cap_header*>( (uint8_t*)param_head->value );
         caps.emplace_back( cap_head );
     }
 
