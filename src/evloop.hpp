@@ -6,6 +6,7 @@
 #include <boost/asio/steady_timer.hpp>
 
 #include "table.hpp"
+#include "fsm.hpp"
 
 struct GlobalConf;
 struct bgp_fsm;
@@ -18,8 +19,8 @@ public:
     bgp_table_v4 table;
     void schedule_updates( std::vector<nlri> &v );
 private:
-    void on_accept( boost::system::error_code &ec );
-    void on_send_updates( boost::system::error_code &ec );
+    void on_accept( const boost::system::error_code &ec );
+    void on_send_updates( const boost::system::error_code &ec );
 
     GlobalConf &conf;
     // asio
