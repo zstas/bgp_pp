@@ -17,13 +17,47 @@ path_attr_t::path_attr_t( path_attr_header *header ):
     extended_length( header->extended_length ),
     type( header->type )
 {
-    auto len = header->extended_length == 1 ? header->ext_len.native() : header->len;
-    auto body = reinterpret_cast<uint8_t*>( header ) + 2 + ( header->extended_length ? 2 : 1 );
-    bytes = std::vector<uint8_t>( body, body + len );
+    auto len = header->len;
+    bytes = std::vector<uint8_t>( header->data, header->data + len );
+}
+
+path_attr_t::path_attr_t( path_attr_header_extlen *header ):
+    optional( header->optional ),
+    transitive( header->transitive ),
+    partial( header->partial ),
+    extended_length( header->extended_length ),
+    type( header->type )
+{
+    auto len = header->ext_len.native();
+    bytes = std::vector<uint8_t>( header->data, header->data + len );
 }
 
 uint32_t path_attr_t::get_u32() const {
     return bswap( *reinterpret_cast<const uint32_t*>( bytes.data() ) );
+}
+
+std::vector<uint8_t> path_attr_t::to_bytes() const {
+    std::vector<uint8_t> out;
+
+    out.resize( sizeof( path_attr_header ) );
+    auto header = reinterpret_cast<path_attr_header*>( out.data() );
+    header->optional = optional;
+    header->partial = partial;
+    header->transitive = transitive;
+    header->extended_length = optional;
+    header->type = type;
+
+    if( extended_length == 1 ) {
+        out.resize( sizeof( path_attr_header_extlen ) );
+        auto extlen_header = reinterpret_cast<path_attr_header_extlen*>( header );
+        extlen_header->ext_len = bytes.size();
+    } else {
+        header->len = bytes.size();
+    }
+
+    out.insert( out.end(), bytes.begin(), bytes.end() );
+
+    return out;
 }
 
 BE16* as_path_header::get_as() const {
@@ -188,8 +222,15 @@ std::tuple<std::vector<nlri>,std::vector<path_attr_t>,std::vector<nlri>> bgp_pac
     offset += sizeof( len );
     while( len > 0 ) {
         auto path = reinterpret_cast<path_attr_header*>( update_data + offset );
-        paths.emplace_back( path );
-        auto attr_len = 3 + ( path->extended_length == 1 ? ( path->ext_len.native() + 1 ) : path->len );
+        uint16_t attr_len = 0;
+        if( path->extended_length == 1 ) {
+            auto extlen_path = reinterpret_cast<path_attr_header_extlen*>( path );
+            paths.emplace_back( extlen_path );
+            attr_len = sizeof( path_attr_header_extlen ) + extlen_path->ext_len.native();
+        } else {
+            paths.emplace_back( path );
+            attr_len = sizeof( path_attr_header ) + path->len;
+        }
         len -= attr_len;
         offset += attr_len;
     };

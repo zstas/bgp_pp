@@ -11,9 +11,10 @@
 struct GlobalConf;
 struct bgp_fsm;
 
-class EVLoop {
+class EVLoop : public std::enable_shared_from_this<EVLoop> {
 public:
     EVLoop( boost::asio::io_context &i, GlobalConf &c );
+    void start();
     
     std::map<address_v4,std::shared_ptr<bgp_fsm>> neighbours;
     bgp_table_v4 table;

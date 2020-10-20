@@ -70,10 +70,19 @@ struct path_attr_header {
     uint8_t transitive:1;
     uint8_t optional:1;
     PATH_ATTRIBUTE type;
-    union {
-        BE16 ext_len;
-        uint8_t len;
-    }__attribute__((__packed__));
+    uint8_t len;
+    uint8_t data[0];
+}__attribute__((__packed__));
+
+struct path_attr_header_extlen {
+    uint8_t unused:4;
+    uint8_t extended_length:1;
+    uint8_t partial:1;
+    uint8_t transitive:1;
+    uint8_t optional:1;
+    PATH_ATTRIBUTE type;
+    BE16 ext_len;
+    uint8_t data[0];
 }__attribute__((__packed__));
 
 struct path_attr_t {
@@ -87,6 +96,7 @@ struct path_attr_t {
 
     path_attr_t() = default;
     path_attr_t( path_attr_header *header );
+    path_attr_t( path_attr_header_extlen *header );
 
     void make_local_pref( uint32_t val );
     void make_origin( ORIGIN o );
@@ -94,6 +104,7 @@ struct path_attr_t {
 
     uint32_t get_u32() const;
     std::vector<uint32_t> parse_as_path() const;
+    std::vector<uint8_t> to_bytes() const;
 };
 
 bool operator==( const path_attr_t &lhs, const path_attr_t &rhs );

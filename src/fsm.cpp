@@ -13,8 +13,10 @@ using prefix_v4 = boost::asio::ip::network_v4;
 #include "packet.hpp"
 #include "log.hpp"
 #include "string_utils.hpp"
+#include "evloop.hpp"
 
 extern Logger logger;
+extern std::shared_ptr<EVLoop> runtime;
 
 bgp_fsm::bgp_fsm( io_context &io,  GlobalConf &g, bgp_table_v4 &t, bgp_neighbour_v4 &c ):
     state( FSM_STATE::IDLE ),
@@ -172,16 +174,19 @@ void bgp_fsm::rx_keepalive( bgp_packet &pkt ) {
 }
 
 void bgp_fsm::rx_update( bgp_packet &pkt ) {
+    std::vector<nlri> schedule;
     auto [ withdrawn_routes, path_attrs, routes ] = pkt.process_update();
     logger.logInfo() << LOGS::FSM << "Received UPDATE message with withdrawn routes " << withdrawn_routes.size()
     << ", paths: " << path_attrs.size() << " and routes: " << routes.size() << std::endl;
 
     for( auto &wroute: withdrawn_routes ) {
+        schedule.push_back( wroute );
         logger.logInfo() << LOGS::FSM << "Received withdrawn route: " << wroute << std::endl;
         table.del_path( wroute, shared_from_this() );
     }
 
     for( auto &route: routes ) {
+        schedule.push_back( route );
         logger.logInfo() << LOGS::FSM << "Received route: " << route << std::endl;
         table.add_path( route, path_attrs, shared_from_this() );
     }
@@ -195,6 +200,7 @@ void bgp_fsm::rx_update( bgp_packet &pkt ) {
     }
 
     table.best_path_selection();
+    runtime->schedule_updates( schedule );
 }
 
 void bgp_fsm::on_receive( error_code ec, std::size_t length ) {
@@ -249,7 +255,7 @@ void bgp_fsm::do_read() {
     sock->async_receive( boost::asio::buffer( buffer ), std::bind( &bgp_fsm::on_receive, shared_from_this(), std::placeholders::_1, std::placeholders::_2 ) );
 }
 
-void bgp_fsm::tx_update( const std::vector<nlri> &prefixes, const std::vector<path_attr_t> &path, const std::vector<nlri> &withdrawn ) {
+void bgp_fsm::tx_update( const std::vector<nlri> &prefixes, std::shared_ptr<std::vector<path_attr_t>> path, const std::vector<nlri> &withdrawn ) {
     logger.logInfo() << LOGS::FSM << "Sending UPDATE to peer: " << sock->remote_endpoint().address().to_string() << std::endl;
 
     // making withdrawn buf
@@ -272,7 +278,7 @@ void bgp_fsm::tx_update( const std::vector<nlri> &prefixes, const std::vector<pa
     }
 
     {
-        auto len = bswap( static_cast<uint16_t>( withdrawn_body.size() ) );
+        uint16_t len = bswap( static_cast<uint16_t>( withdrawn_body.size() ) );
         std::array<uint8_t,2> temp;
         std::memcpy( temp.data(), &len, 2 );
         withdrawn_body.insert( withdrawn_body.begin(), temp.begin(), temp.end() );
@@ -282,12 +288,13 @@ void bgp_fsm::tx_update( const std::vector<nlri> &prefixes, const std::vector<pa
     std::vector<uint8_t> path_body;
     path_body.reserve( 1000 );
 
-    for( auto const &p: path ) {
-        path_body.insert( path_body.end(), p.bytes.begin(), p.bytes.end() );
+    for( auto const &p: *path ) {
+        auto bytes = p.to_bytes();
+        path_body.insert( path_body.end(), bytes.begin(), bytes.end() );
     }
 
     {
-        auto len = bswap( static_cast<uint16_t>( path_body.size() ) );
+        uint16_t len = bswap( static_cast<uint16_t>( path_body.size() ) );
         std::array<uint8_t,2> temp;
         std::memcpy( temp.data(), &len, 2 );
         path_body.insert( path_body.begin(), temp.begin(), temp.end() );
@@ -313,7 +320,7 @@ void bgp_fsm::tx_update( const std::vector<nlri> &prefixes, const std::vector<pa
     }
 
     {
-        auto len = bswap( static_cast<uint16_t>( nlri_body.size() ) );
+        uint16_t len = bswap( static_cast<uint16_t>( nlri_body.size() ) );
         std::array<uint8_t,2> temp;
         std::memcpy( temp.data(), &len, 2 );
         nlri_body.insert( nlri_body.begin(), temp.begin(), temp.end() );

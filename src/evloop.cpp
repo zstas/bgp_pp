@@ -23,7 +23,10 @@ EVLoop::EVLoop( boost::asio::io_context &i, GlobalConf &c ):
     for( auto &nei: c.neighbours ) {
         neighbours.emplace( nei.address, std::make_shared<bgp_fsm>( io, c, table, nei ) );
     }
-    accpt.async_accept( sock, std::bind( &EVLoop::on_accept, this, std::placeholders::_1 ) );
+}
+
+void EVLoop::start() {
+    accpt.async_accept( sock, std::bind( &EVLoop::on_accept, shared_from_this(), std::placeholders::_1 ) );
 }
 
 void EVLoop::on_accept( const boost::system::error_code &ec ) {
@@ -38,7 +41,7 @@ void EVLoop::on_accept( const boost::system::error_code &ec ) {
     } else {
         nei_it->second->place_connection( std::move( sock ) );
     }
-    accpt.async_accept( sock, std::bind( &EVLoop::on_accept, this, std::placeholders::_1 ) );
+    accpt.async_accept( sock, std::bind( &EVLoop::on_accept, shared_from_this(), std::placeholders::_1 ) );
 }
 
 void EVLoop::schedule_updates( std::vector<nlri> &v ) {
@@ -46,7 +49,7 @@ void EVLoop::schedule_updates( std::vector<nlri> &v ) {
         planning_updates.push_back( n );
     }
     send_updates.expires_from_now( std::chrono::seconds( 1 ) );
-    send_updates.async_wait( std::bind( &EVLoop::on_send_updates, this, std::placeholders::_1 ) );
+    send_updates.async_wait( std::bind( &EVLoop::on_send_updates, shared_from_this(), std::placeholders::_1 ) );
 }
 
 void EVLoop::on_send_updates( const boost::system::error_code &ec ) {
@@ -57,8 +60,9 @@ void EVLoop::on_send_updates( const boost::system::error_code &ec ) {
     std::map<std::shared_ptr<std::vector<path_attr_t>>,std::vector<nlri>> pending_update;
     for( auto const &n: planning_updates ) {
         auto it = table.table.end();
-        if( auto it = table.table.find( n ); it == table.table.end() ) {
+        if( it = table.table.find( n ); it == table.table.end() ) {
             withdrawn_update.push_back( n );
+            continue;
         }
         if( auto updIt = pending_update.find( it->second.attrs ); updIt != pending_update.end() ) {
             updIt->second.push_back( n );
@@ -76,7 +80,7 @@ void EVLoop::on_send_updates( const boost::system::error_code &ec ) {
         
         auto cur_withdrawn = withdrawn_update;
         for( auto const &[ path, n_vec ]: pending_update ) {
-            nei->tx_update( n_vec, *path, cur_withdrawn );
+            nei->tx_update( n_vec, path, cur_withdrawn );
             cur_withdrawn.clear();
         }
     }

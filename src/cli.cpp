@@ -20,7 +20,7 @@ using prefix_v4 = boost::asio::ip::network_v4;
 
 extern Logger logger;
 
-CLI_Session::CLI_Session( boost::asio::io_context &i, boost::asio::local::stream_protocol::socket s, EVLoop &r ):
+CLI_Session::CLI_Session( boost::asio::io_context &i, boost::asio::local::stream_protocol::socket s, std::shared_ptr<EVLoop> r ):
     io( i ),
     sock( std::move( s ) ),
     runtime( r )
@@ -55,7 +55,7 @@ void CLI_Session::on_receive( const boost::system::error_code &ec, std::size_t l
         auto req = deserialize<Show_Neighbour_Req>( inMsg.data );
         // TODO: handle req
         Show_Neighbour_Resp resp;
-        for( auto const &[ address, ptr ]: runtime.neighbours ) {
+        for( auto const &[ address, ptr ]: runtime->neighbours ) {
             BGP_Neighbour_Info info;
             info.address = address.to_string();
             if( !ptr ) {
@@ -80,7 +80,7 @@ void CLI_Session::on_receive( const boost::system::error_code &ec, std::size_t l
         auto req = deserialize<Show_Table_Req>( inMsg.data );
         // TODO: handle req
         Show_Table_Resp resp;
-        for( auto const &[ prefix, path ]: runtime.table.table ) {
+        for( auto const &[ prefix, path ]: runtime->table.table ) {
             BGP_Entry entry;
             auto in_time_t = std::chrono::system_clock::to_time_t( path.time );
             std::stringstream stream;
@@ -119,7 +119,7 @@ void CLI_Session::on_receive( const boost::system::error_code &ec, std::size_t l
     start();
 }
 
-CLI_Server::CLI_Server( boost::asio::io_context &i, const std::string &path, EVLoop &r ):
+CLI_Server::CLI_Server( boost::asio::io_context &i, const std::string &path, std::shared_ptr<EVLoop> r ):
     io( i ),
     ep( path ),
     acceptor( io, ep ),

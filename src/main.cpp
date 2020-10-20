@@ -17,6 +17,7 @@ using prefix_v4 = boost::asio::ip::network_v4;
 #include "cli.hpp"
 
 Logger logger;
+std::shared_ptr<EVLoop> runtime;
 
 static void config_init( const std::string &path ) {
     GlobalConf new_conf;
@@ -91,9 +92,10 @@ int main( int argc, char *argv[] ) {
     unlink( unix_socket_path.c_str() );
 
     boost::asio::io_context io;
-    EVLoop loop { io, conf };
-    auto cli = std::make_shared<CLI_Server>( io, unix_socket_path, loop );
+    runtime = std::make_shared<EVLoop>( io, conf );
+    auto cli = std::make_shared<CLI_Server>( io, unix_socket_path, runtime );
     cli->start();
+    runtime->start();
     while( true ) {
         try { 
             io.run();
