@@ -10,12 +10,13 @@ using prefix_v4 = boost::asio::ip::network_v4;
 
 extern Logger logger;
 
-path_attr_t::path_attr_t( path_attr_header *header ):
+path_attr_t::path_attr_t( path_attr_header *header, bool f ):
     optional( header->optional ),
     transitive( header->transitive ),
     partial( header->partial ),
     extended_length( header->extended_length ),
-    type( header->type )
+    type( header->type ),
+    four_byte_asn( f )
 {
     auto len = header->len;
     bytes = std::vector<uint8_t>( header->data, header->data + len );
@@ -60,29 +61,47 @@ std::vector<uint8_t> path_attr_t::to_bytes() const {
     return out;
 }
 
-BE16* as_path_header::get_as() const {
-    return ( BE16* )( val );
+std::vector<uint32_t> as_path_header::parse_be16() const {
+    std::vector<uint32_t> list;
+    auto p = &val16;
+    for( int i = 0; i < len; i++ ) {
+        list.emplace_back( p[i]->native() );
+    }
+    return list;
+}
+std::vector<uint32_t> as_path_header::parse_be32() const {
+    std::vector<uint32_t> list;
+    auto p = &val32;
+    for( int i = 0; i < len; i++ ) {
+        list.emplace_back( p[i]->native() );
+    }
+    return list;
 }
 
 std::vector<uint32_t> path_attr_t::parse_as_path() const {
     std::vector<uint32_t> list;
 
+    int asn_size = four_byte_asn ? 4 : 2;
+
     auto temp = bytes;
     while( !temp.empty() ) {
-        if( temp.size() < 2 ) {
+        if( temp.size() < sizeof( as_path_header ) ) {
             temp.clear();
             break;
         }
         auto header = reinterpret_cast<as_path_header*>( temp.data() );
-        if( temp.size() < ( sizeof( *header ) + 2 * header->len ) ) {
+        if( temp.size() < ( sizeof( *header ) + asn_size * header->len ) ) {
             temp.clear();
             break;
         }
-        auto val = header->get_as();
-        for( int i = 0; i < header->len; i++ ) {
-            list.emplace_back( val[ i ].native() );
+        std::vector<uint32_t> parsed_list;
+        if( four_byte_asn ) {
+            parsed_list = header->parse_be32();
+        } else {
+            parsed_list = header->parse_be32();
         }
-        temp.erase( temp.begin(), temp.begin() + sizeof( *header ) + ( header->len * 2 ) );
+        list.insert( list.end(), parsed_list.begin(), parsed_list.end() );
+        temp.erase( temp.begin(), temp.begin() + sizeof( *header ) + ( header->len * asn_size ) );
     }
 
     return list;
@@ -177,7 +196,7 @@ uint8_t* bgp_packet::get_body() {
     return reinterpret_cast<uint8_t*>( data + sizeof( bgp_header ) );
 }
 
-std::tuple<std::vector<nlri>,std::vector<path_attr_t>,std::vector<nlri>> bgp_packet::process_update() {
+std::tuple<std::vector<nlri>,std::vector<path_attr_t>,std::vector<nlri>> bgp_packet::process_update( bool four_byte_asn ) {
     std::vector<nlri> withdrawn_routes;
     auto header = get_header();
     auto update_data = data + sizeof( bgp_header );
@@ -228,7 +247,7 @@ std::tuple<std::vector<nlri>,std::vector<path_attr_t>,std::vector<nlri>> bgp_pac
             paths.emplace_back( extlen_path );
             attr_len = sizeof( path_attr_header_extlen ) + extlen_path->ext_len.native();
         } else {
-            paths.emplace_back( path );
+            paths.emplace_back( path, four_byte_asn );
             attr_len = sizeof( path_attr_header ) + path->len;
         }
         len -= attr_len;

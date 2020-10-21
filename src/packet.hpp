@@ -58,9 +58,11 @@ enum class BGP_SAFI : uint8_t {
 struct as_path_header {
     AS_PATH_SEGMENT_TYPE type;
     uint8_t len;
-    BE16 val[0];
+    BE16 val16[0];
+    BE32 val32[0];
 
-    BE16* get_as() const;
+    std::vector<uint32_t> parse_be16() const;
+    std::vector<uint32_t> parse_be32() const;
 }__attribute__((__packed__));
 
 struct path_attr_header {
@@ -93,9 +95,10 @@ struct path_attr_t {
     uint8_t unused:4;
     PATH_ATTRIBUTE type;
     std::vector<uint8_t> bytes;
+    bool four_byte_asn;
 
     path_attr_t() = default;
-    path_attr_t( path_attr_header *header );
+    path_attr_t( path_attr_header *header, bool four_byte_asn = false );
     path_attr_t( path_attr_header_extlen *header );
 
     void make_local_pref( uint32_t val );
@@ -174,7 +177,7 @@ struct bgp_packet {
     bgp_header* get_header();
     bgp_open* get_open();
     uint8_t* get_body();
-    std::tuple<std::vector<nlri>,std::vector<path_attr_t>,std::vector<nlri>> process_update();
+    std::tuple<std::vector<nlri>,std::vector<path_attr_t>,std::vector<nlri>> process_update( bool four_byte_asn );
 };
 
 #endif

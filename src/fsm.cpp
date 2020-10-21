@@ -175,7 +175,9 @@ void bgp_fsm::rx_keepalive( bgp_packet &pkt ) {
 
 void bgp_fsm::rx_update( bgp_packet &pkt ) {
     std::vector<nlri> schedule;
-    auto [ withdrawn_routes, path_attrs, routes ] = pkt.process_update();
+    auto cap_it = std::find_if( caps.begin(), caps.end(), []( const bgp_cap_t &val ) -> bool { return val.code == BGP_CAP_CODE::FOUR_OCT_AS; } );
+    auto four_byte_asn = ( cap_it == caps.end() );
+    auto [ withdrawn_routes, path_attrs, routes ] = pkt.process_update( four_byte_asn );
     logger.logInfo() << LOGS::FSM << "Received UPDATE message with withdrawn routes " << withdrawn_routes.size()
     << ", paths: " << path_attrs.size() << " and routes: " << routes.size() << std::endl;
 
@@ -289,6 +291,7 @@ void bgp_fsm::tx_update( const std::vector<nlri> &prefixes, std::shared_ptr<std:
     path_body.reserve( 1000 );
 
     for( auto const &p: *path ) {
+        logger.logInfo() << LOGS::FSM << "Sending path: " << p << std::endl;
         auto bytes = p.to_bytes();
         path_body.insert( path_body.end(), bytes.begin(), bytes.end() );
     }
