@@ -65,6 +65,8 @@ struct as_path_header {
     std::vector<uint32_t> parse_be32() const;
 }__attribute__((__packed__));
 
+static_assert( sizeof( as_path_header ) == 2, "size of as_path_header should be equal 2 bytes" );
+
 struct path_attr_header {
     uint8_t unused:4;
     uint8_t extended_length:1;
@@ -76,6 +78,8 @@ struct path_attr_header {
     uint8_t data[0];
 }__attribute__((__packed__));
 
+static_assert( sizeof( path_attr_header ) == 3, "size of path_attr_header should be equal 2 bytes" );
+
 struct path_attr_header_extlen {
     uint8_t unused:4;
     uint8_t extended_length:1;
@@ -86,6 +90,8 @@ struct path_attr_header_extlen {
     BE16 ext_len;
     uint8_t data[0];
 }__attribute__((__packed__));
+
+static_assert( sizeof( path_attr_header_extlen ) == 4, "size of path_attr_header_extlen should be equal 2 bytes" );
 
 struct path_attr_t {
     uint8_t optional:1;

@@ -45,12 +45,12 @@ std::vector<uint8_t> path_attr_t::to_bytes() const {
     header->optional = optional;
     header->partial = partial;
     header->transitive = transitive;
-    header->extended_length = optional;
+    header->extended_length = extended_length;
     header->type = type;
 
     if( extended_length == 1 ) {
         out.resize( sizeof( path_attr_header_extlen ) );
-        auto extlen_header = reinterpret_cast<path_attr_header_extlen*>( header );
+        auto extlen_header = reinterpret_cast<path_attr_header_extlen*>( out.data() );
         extlen_header->ext_len = bytes.size();
     } else {
         header->len = bytes.size();

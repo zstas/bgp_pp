@@ -307,15 +307,17 @@ void bgp_fsm::tx_update( const std::vector<nlri> &prefixes, std::shared_ptr<std:
     std::vector<uint8_t> nlri_body;
     nlri_body.reserve( 1000 );
 
-    for( auto const &w: withdrawn ) {
-        uint8_t nlri_len = w.prefix_length();
-        nlri_body.push_back( nlri_len );
-        auto pref = bswap( w.address().to_uint() );
+    for( auto const &p: prefixes ) {
+        logger.logInfo() << LOGS::FSM << "Sending prefix: " << p.to_string() << std::endl;
+        uint8_t nlri_len = p.prefix_length();
+        uint32_t pref = bswap( p.address().to_uint() );
 
-        auto bytes = nlri_len / 8;
+        uint8_t bytes = nlri_len / 8;
         if( nlri_len % 8 != 0 ) {
             bytes++;
         }
+        nlri_body.push_back( bytes );
+
         auto pref_data = reinterpret_cast<uint8_t*>( &pref );
         for( int i = 0; i < bytes; i++ ) {
             nlri_body.push_back( pref_data[ i ] );
