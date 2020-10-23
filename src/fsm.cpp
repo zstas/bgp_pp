@@ -260,6 +260,20 @@ void bgp_fsm::do_read() {
 void bgp_fsm::tx_update( const std::vector<nlri> &prefixes, std::shared_ptr<std::vector<path_attr_t>> path, const std::vector<nlri> &withdrawn ) {
     logger.logInfo() << LOGS::FSM << "Sending UPDATE to peer: " << sock->remote_endpoint().address().to_string() << std::endl;
 
+    auto new_path = *path;
+
+    // For eBGP peer, delete local pref attribute
+    if( gconf.my_as != conf.remote_as ) {
+        new_path.erase(
+            std::remove_if(
+                new_path.begin(),
+                new_path.end(),
+                []( const path_attr_t &a ) -> bool { return a.type == PATH_ATTRIBUTE::LOCAL_PREF; }
+            ),
+            new_path.end()
+        );
+    }
+
     // making withdrawn buf
     std::vector<uint8_t> withdrawn_body;
     withdrawn_body.reserve( 1000 );
@@ -290,7 +304,7 @@ void bgp_fsm::tx_update( const std::vector<nlri> &prefixes, std::shared_ptr<std:
     std::vector<uint8_t> path_body;
     path_body.reserve( 1000 );
 
-    for( auto const &p: *path ) {
+    for( auto const &p: new_path ) {
         logger.logInfo() << LOGS::FSM << "Sending path: " << p << std::endl;
         auto bytes = p.to_bytes();
         path_body.insert( path_body.end(), bytes.begin(), bytes.end() );
@@ -316,19 +330,12 @@ void bgp_fsm::tx_update( const std::vector<nlri> &prefixes, std::shared_ptr<std:
         if( nlri_len % 8 != 0 ) {
             bytes++;
         }
-        nlri_body.push_back( bytes );
+        nlri_body.push_back( nlri_len );
 
         auto pref_data = reinterpret_cast<uint8_t*>( &pref );
         for( int i = 0; i < bytes; i++ ) {
             nlri_body.push_back( pref_data[ i ] );
         }
-    }
-
-    {
-        uint16_t len = bswap( static_cast<uint16_t>( nlri_body.size() ) );
-        std::array<uint8_t,2> temp;
-        std::memcpy( temp.data(), &len, 2 );
-        nlri_body.insert( nlri_body.begin(), temp.begin(), temp.end() );
     }
 
     std::vector<uint8_t> body { withdrawn_body.begin(), withdrawn_body.end() };
