@@ -1,5 +1,6 @@
 #include <vector>
 #include <boost/asio/ip/network_v4.hpp>
+#include <boost/asio/ip/address.hpp>
 
 using address_v4 = boost::asio::ip::address_v4;
 using prefix_v4 = boost::asio::ip::network_v4;
@@ -309,8 +310,19 @@ void path_attr_t::make_origin( ORIGIN o ) {
     bytes.push_back( static_cast<uint8_t>( o ) );
 }
 
-void path_attr_t::make_nexthop( address_v4 a ) {
+void path_attr_t::make_nexthop( const address_v4 &a ) {
     type = PATH_ATTRIBUTE::NEXT_HOP;
     auto temp = a.to_bytes();
     bytes = { temp.begin(), temp.end() };
+}
+
+void path_attr_t::make_nexthop( const boost::asio::ip::address &a ) {
+    type = PATH_ATTRIBUTE::NEXT_HOP;
+    if( a.is_v4() ) {
+        auto temp = a.to_v4().to_bytes();
+        bytes = { temp.begin(), temp.end() };
+    } else if( a.is_v6() ) {
+        auto temp = a.to_v6().to_bytes();
+        bytes = { temp.begin(), temp.end() };
+    }
 }

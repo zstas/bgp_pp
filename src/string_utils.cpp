@@ -2,6 +2,7 @@
 #include <iomanip>
 #include <sstream>
 #include <boost/asio/ip/network_v4.hpp>
+#include <boost/asio/ip/address.hpp>
 
 using address_v4 = boost::asio::ip::address_v4;
 using prefix_v4 = boost::asio::ip::network_v4;

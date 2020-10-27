@@ -272,6 +272,16 @@ void bgp_fsm::tx_update( const std::vector<nlri> &prefixes, std::shared_ptr<std:
             ),
             new_path.end()
         );
+        auto it = std::find_if(
+            new_path.begin(),
+            new_path.end(),
+            []( const path_attr_t &attr ) -> bool {
+                return attr.type == PATH_ATTRIBUTE::NEXT_HOP;
+            }
+        ); 
+        if( it != new_path.end() ) {
+            it->make_nexthop( sock->local_endpoint().address() );
+        }
     }
 
     // making withdrawn buf
