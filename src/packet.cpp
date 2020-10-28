@@ -99,7 +99,7 @@ std::vector<uint32_t> path_attr_t::parse_as_path() const {
         if( four_byte_asn ) {
             parsed_list = header->parse_be32();
         } else {
-            parsed_list = header->parse_be32();
+            parsed_list = header->parse_be16();
         }
         list.insert( list.end(), parsed_list.begin(), parsed_list.end() );
         temp.erase( temp.begin(), temp.begin() + sizeof( *header ) + ( header->len * asn_size ) );
@@ -324,5 +324,25 @@ void path_attr_t::make_nexthop( const boost::asio::ip::address &a ) {
     } else if( a.is_v6() ) {
         auto temp = a.to_v6().to_bytes();
         bytes = { temp.begin(), temp.end() };
+    }
+}
+
+void path_attr_t::make_as_path( std::vector<uint32_t> aspath ) {
+    type = PATH_ATTRIBUTE::AS_PATH;
+
+    int asn_size = four_byte_asn ? 4 : 2;
+
+    bytes.resize( sizeof( as_path_header ) + aspath.size() * asn_size );
+    
+    auto header = reinterpret_cast<as_path_header*>( bytes.data() );
+    header->type = AS_PATH_SEGMENT_TYPE::AS_SEQUENCE;
+    header->len = aspath.size();
+    
+    for( int i = 0; i < aspath.size(); i++ ) {
+        if( four_byte_asn ) {
+            header->val32[ i ] = aspath[ i ];
+        } else {
+            header->val16[ i ] = aspath[ i ];
+        }
     }
 }

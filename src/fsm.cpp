@@ -262,8 +262,9 @@ void bgp_fsm::tx_update( const std::vector<nlri> &prefixes, std::shared_ptr<std:
 
     auto new_path = *path;
 
-    // For eBGP peer, delete local pref attribute
+    // For eBGP peer
     if( gconf.my_as != conf.remote_as ) {
+        // remove local pref attribute
         new_path.erase(
             std::remove_if(
                 new_path.begin(),
@@ -272,15 +273,31 @@ void bgp_fsm::tx_update( const std::vector<nlri> &prefixes, std::shared_ptr<std:
             ),
             new_path.end()
         );
-        auto it = std::find_if(
+
+        // set next hop to output interface
+        auto nexthopIt = std::find_if(
             new_path.begin(),
             new_path.end(),
             []( const path_attr_t &attr ) -> bool {
                 return attr.type == PATH_ATTRIBUTE::NEXT_HOP;
             }
         ); 
-        if( it != new_path.end() ) {
-            it->make_nexthop( sock->local_endpoint().address() );
+        if( nexthopIt != new_path.end() ) {
+            nexthopIt->make_nexthop( sock->local_endpoint().address() );
+        }
+
+        // put our as in as_path attribute
+        auto aspathIt = std::find_if(
+            new_path.begin(),
+            new_path.end(),
+            []( const path_attr_t &attr ) -> bool {
+                return attr.type == PATH_ATTRIBUTE::AS_PATH;
+            }
+        ); 
+        if( aspathIt != new_path.end() ) {
+            auto new_as_path = aspathIt->parse_as_path();
+            new_as_path.push_back( gconf.my_as );
+            aspathIt->make_as_path( new_as_path );
         }
     }
 

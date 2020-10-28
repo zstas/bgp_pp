@@ -111,6 +111,7 @@ struct path_attr_t {
     void make_origin( ORIGIN o );
     void make_nexthop( const address_v4 &a );
     void make_nexthop( const boost::asio::ip::address &a );
+    void make_as_path( std::vector<uint32_t> aspath );
 
     uint32_t get_u32() const;
     std::vector<uint32_t> parse_as_path() const;
