@@ -44,7 +44,7 @@ void EVLoop::on_accept( const boost::system::error_code &ec ) {
     accpt.async_accept( sock, std::bind( &EVLoop::on_accept, shared_from_this(), std::placeholders::_1 ) );
 }
 
-void EVLoop::schedule_updates( std::vector<nlri> &v ) {
+void EVLoop::schedule_updates( std::list<nlri> &v ) {
     for( auto const &n: v ) {
         planning_updates.push_back( n );
     }

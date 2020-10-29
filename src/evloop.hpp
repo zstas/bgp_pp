@@ -18,7 +18,7 @@ public:
     
     std::map<address_v4,std::shared_ptr<bgp_fsm>> neighbours;
     bgp_table_v4 table;
-    void schedule_updates( std::vector<nlri> &v );
+    void schedule_updates( std::list<nlri> &v );
 private:
     void on_accept( const boost::system::error_code &ec );
     void on_send_updates( const boost::system::error_code &ec );

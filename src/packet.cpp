@@ -299,6 +299,7 @@ bool operator==( const path_attr_t &lhs, const path_attr_t &rhs ) {
 }
 
 void path_attr_t::make_local_pref( uint32_t val ) {
+    bytes.clear();
     val = bswap( val );
     type = PATH_ATTRIBUTE::LOCAL_PREF;
     bytes.resize( sizeof( val ) );
@@ -306,17 +307,22 @@ void path_attr_t::make_local_pref( uint32_t val ) {
 }
 
 void path_attr_t::make_origin( ORIGIN o ) {
+    transitive = 1;
+    bytes.clear();
     type = PATH_ATTRIBUTE::ORIGIN;
     bytes.push_back( static_cast<uint8_t>( o ) );
 }
 
 void path_attr_t::make_nexthop( const address_v4 &a ) {
+    transitive = 1;
+    bytes.clear();
     type = PATH_ATTRIBUTE::NEXT_HOP;
     auto temp = a.to_bytes();
     bytes = { temp.begin(), temp.end() };
 }
 
 void path_attr_t::make_nexthop( const boost::asio::ip::address &a ) {
+    bytes.clear();
     type = PATH_ATTRIBUTE::NEXT_HOP;
     if( a.is_v4() ) {
         auto temp = a.to_v4().to_bytes();
@@ -328,7 +334,10 @@ void path_attr_t::make_nexthop( const boost::asio::ip::address &a ) {
 }
 
 void path_attr_t::make_as_path( std::vector<uint32_t> aspath ) {
+    bytes.clear();
     type = PATH_ATTRIBUTE::AS_PATH;
+    transitive = 1;
+    extended_length = 1;
 
     int asn_size = four_byte_asn ? 4 : 2;
 

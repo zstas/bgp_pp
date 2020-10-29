@@ -73,6 +73,8 @@ struct bgp_fsm : public std::enable_shared_from_this<bgp_fsm> {
 
     void rx_update( bgp_packet &pkt );
     void tx_update( const std::vector<nlri> &prefixes, std::shared_ptr<std::vector<path_attr_t>> path, const std::vector<nlri> &withdrawn );
+
+    void send_all_prefixes();
 };
 
 #endif

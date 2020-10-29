@@ -166,6 +166,7 @@ void bgp_fsm::rx_keepalive( bgp_packet &pkt ) {
         logger.logError() << LOGS::FSM << "BGP goes to ESTABLISHED state with peer: " << sock->remote_endpoint().address().to_string() << std::endl;
         state = FSM_STATE::ESTABLISHED;
         start_keepalive_timer();
+        send_all_prefixes();
     } else if( state != FSM_STATE::ESTABLISHED ) {
         logger.logError() << LOGS::FSM << "Received a KEEPALIVE in incorrect state, closing connection" << std::endl;
         sock->close();
@@ -174,9 +175,9 @@ void bgp_fsm::rx_keepalive( bgp_packet &pkt ) {
 }
 
 void bgp_fsm::rx_update( bgp_packet &pkt ) {
-    std::vector<nlri> schedule;
+    std::list<nlri> schedule;
     auto cap_it = std::find_if( caps.begin(), caps.end(), []( const bgp_cap_t &val ) -> bool { return val.code == BGP_CAP_CODE::FOUR_OCT_AS; } );
-    auto four_byte_asn = ( cap_it == caps.end() );
+    auto four_byte_asn = ( cap_it != caps.end() );
     auto [ withdrawn_routes, path_attrs, routes ] = pkt.process_update( four_byte_asn );
     logger.logInfo() << LOGS::FSM << "Received UPDATE message with withdrawn routes " << withdrawn_routes.size()
     << ", paths: " << path_attrs.size() << " and routes: " << routes.size() << std::endl;
@@ -261,6 +262,8 @@ void bgp_fsm::tx_update( const std::vector<nlri> &prefixes, std::shared_ptr<std:
     logger.logInfo() << LOGS::FSM << "Sending UPDATE to peer: " << sock->remote_endpoint().address().to_string() << std::endl;
 
     auto new_path = *path;
+    auto cap_it = std::find_if( caps.begin(), caps.end(), []( const bgp_cap_t &val ) -> bool { return val.code == BGP_CAP_CODE::FOUR_OCT_AS; } );
+    auto four_byte_asn = ( cap_it != caps.end() );
 
     // For eBGP peer
     if( gconf.my_as != conf.remote_as ) {
@@ -298,6 +301,11 @@ void bgp_fsm::tx_update( const std::vector<nlri> &prefixes, std::shared_ptr<std:
             auto new_as_path = aspathIt->parse_as_path();
             new_as_path.push_back( gconf.my_as );
             aspathIt->make_as_path( new_as_path );
+        } else {
+            path_attr_t as_path;
+            as_path.four_byte_asn = four_byte_asn;
+            as_path.make_as_path( { gconf.my_as } );
+            new_path.push_back( as_path );
         }
     }
 
@@ -386,4 +394,19 @@ void bgp_fsm::tx_update( const std::vector<nlri> &prefixes, std::shared_ptr<std:
 
     // send this msg
     sock->async_send( boost::asio::buffer( *pkt_buf ), std::bind( &bgp_fsm::on_send, shared_from_this(), pkt_buf, std::placeholders::_1, std::placeholders::_2 ) );
+}
+
+void bgp_fsm::send_all_prefixes() {
+    std::list<nlri> scheduled;
+    bool ibgp = ( gconf.my_as == conf.remote_as );
+    for( auto const &[ prefix, path ] : table.table ) {
+        if( path.source && path.source->conf.remote_as == gconf.my_as ) {
+            if( !ibgp ) {
+                scheduled.push_back( prefix );
+            }
+        } else {
+            scheduled.push_back( prefix );
+        }
+    }
+    runtime->schedule_updates( scheduled );
 }
