@@ -64,17 +64,15 @@ std::vector<uint8_t> path_attr_t::to_bytes() const {
 
 std::vector<uint32_t> as_path_header::parse_be16() const {
     std::vector<uint32_t> list;
-    auto p = &val16;
     for( int i = 0; i < len; i++ ) {
-        list.emplace_back( p[i]->native() );
+        list.emplace_back( val16[i].native() );
     }
     return list;
 }
 std::vector<uint32_t> as_path_header::parse_be32() const {
     std::vector<uint32_t> list;
-    auto p = &val32;
     for( int i = 0; i < len; i++ ) {
-        list.emplace_back( p[i]->native() );
+        list.emplace_back( val32[i].native() );
     }
     return list;
 }

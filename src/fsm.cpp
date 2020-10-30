@@ -182,6 +182,17 @@ void bgp_fsm::rx_update( bgp_packet &pkt ) {
     logger.logInfo() << LOGS::FSM << "Received UPDATE message with withdrawn routes " << withdrawn_routes.size()
     << ", paths: " << path_attrs.size() << " and routes: " << routes.size() << std::endl;
 
+    for( auto const &a: path_attrs ) {
+        if( a.type != PATH_ATTRIBUTE::AS_PATH )
+            continue;
+        auto ases = a.parse_as_path();
+        auto it = std::find( ases.begin(), ases.end(), gconf.my_as );
+        if( it != ases.end() ) {
+            logger.logInfo() << LOGS::FSM << "Do not process this update because our AS found in AS_PATH attribute" << std::endl;
+            return;
+        }
+    }
+
     for( auto &wroute: withdrawn_routes ) {
         schedule.push_back( wroute );
         logger.logInfo() << LOGS::FSM << "Received withdrawn route: " << wroute << std::endl;

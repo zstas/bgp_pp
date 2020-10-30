@@ -77,7 +77,11 @@ void EVLoop::on_send_updates( const boost::system::error_code &ec ) {
         if( nei->conf.remote_as == conf.my_as ) {
             continue;
         }
-        
+
+        if( nei->state != FSM_STATE::ESTABLISHED ) {
+            continue;
+        }
+
         auto cur_withdrawn = withdrawn_update;
         for( auto const &[ path, n_vec ]: pending_update ) {
             nei->tx_update( n_vec, path, cur_withdrawn );
