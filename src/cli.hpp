@@ -13,7 +13,7 @@ private:
     std::array<char,2048> buf;
     boost::asio::io_context &io;
     boost::asio::local::stream_protocol::socket sock;
-    std::shared_ptr<EVLoop> &runtime;
+    std::shared_ptr<EVLoop> runtime;
 };
 
 class CLI_Server : public std::enable_shared_from_this<CLI_Server> {
@@ -26,7 +26,7 @@ private:
     boost::asio::local::stream_protocol::endpoint ep;
     boost::asio::local::stream_protocol::acceptor acceptor;
     boost::asio::local::stream_protocol::socket sock;
-    std::shared_ptr<EVLoop> &runtime;
+    std::shared_ptr<EVLoop> runtime;
 };
 
 #endif

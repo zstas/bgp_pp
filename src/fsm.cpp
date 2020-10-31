@@ -259,6 +259,7 @@ void bgp_fsm::on_receive( error_code ec, std::size_t length ) {
             break;
         case bgp_type::ROUTE_REFRESH:
             logger.logInfo() << LOGS::FSM << "ROUTE_REFRESH message" << std::endl;
+            send_all_prefixes();
             break;
         }
     }
