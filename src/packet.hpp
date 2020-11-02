@@ -55,6 +55,64 @@ enum class BGP_SAFI : uint8_t {
     MULTICAST = 2,
 };
 
+enum class BGP_ERR_CODE : uint8_t {
+    MESSAGE_HEADER = 1,
+    OPEN_MESSAGE = 2,
+    UPDATE_MESSAGE = 3,
+    HOLD_TIMER_EXPIRED = 4,
+    FSM_ERROR = 5,
+    CEASE = 6,
+};
+
+enum class BGP_MSG_HDR_ERR : uint8_t {
+    CONN_NOT_SYNCH = 1,
+    BAD_MSG_LENGTH = 2,
+    BAD_MSG_TYPE = 3,
+};
+
+enum class BGP_OPEN_ERR : uint8_t {
+    UNSUPPORTED_VERSION = 1,
+    BAD_PEER_AS = 2,
+    BAD_BGP_ID = 3,
+    UNSUPPORTED_OPT_PARAM = 4,
+    // DEPRECATED
+    UNACCEPTABLE_HOLD_TIME = 6,
+    UNSUPPORTED_CAP = 7,
+};
+
+enum class BGP_UPDATE_ERR : uint8_t {
+    MALFORMED_ATTR_LIST = 1,
+    UNRECOGNIZED_WELL_KNOWN_ATTR = 2,
+    MISSING_WELL_KNOWN_ATTR = 3,
+    ATTR_FLAG_ERR = 4,
+    ATTR_LEN_ERR = 5,
+    INV_ORIGIN_ATTR = 6,
+    // DEPRECATED
+    INV_NHOP_ATTR = 8,
+    OPT_ATTR_ERR = 9,
+    INV_NETWORK_FIELD = 10,
+    MALFORMED_AS_PATH = 11,
+};
+
+enum class BGP_FSM_ERR : uint8_t {
+    UNSPEC_ERR = 0,
+    UNEXP_OPENSENT = 1,
+    UNEXP_OPENCONF = 2,
+    UNEXP_ESTABLISHED = 3,
+};
+
+enum class BGP_CEASE_ERR : uint8_t {
+    MAX_PREFIXES_REACHED = 1,
+    ADM_SHUTDOWN = 2,
+    PEER_DECONF = 3,
+    ADM_RESET = 4,
+    CONN_REJECTED = 5,
+    OTH_CONF_CHANGE = 6,
+    CONN_COLLISION_RES = 7,
+    OUT_OF_RES = 8,
+    HARD_RESET = 9,
+};
+
 struct as_path_header {
     AS_PATH_SEGMENT_TYPE type;
     uint8_t len;
@@ -173,6 +231,12 @@ struct bgp_open {
     uint8_t len;
     uint8_t data[0];
     std::vector<bgp_cap_t> parse_capabilites() const;
+}__attribute__((__packed__));
+
+struct bgp_notification {
+    BGP_ERR_CODE code;
+    uint8_t subcode;
+    uint8_t data[0];
 }__attribute__((__packed__));
 
 struct bgp_packet {
