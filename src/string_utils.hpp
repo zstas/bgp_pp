@@ -8,6 +8,12 @@ enum class LOGS: uint8_t;
 enum class PATH_ATTRIBUTE : uint8_t;
 enum class ORIGIN : uint8_t;
 enum class BGP_CAP_CODE : uint8_t;
+enum class BGP_ERR_CODE : uint8_t;
+enum class BGP_MSG_HDR_ERR : uint8_t;
+enum class BGP_OPEN_ERR : uint8_t;
+enum class BGP_UPDATE_ERR : uint8_t;
+enum class BGP_FSM_ERR : uint8_t;
+enum class BGP_CEASE_ERR : uint8_t;
 struct bgp_open;
 struct path_attr_t;
 struct bgp_cap_t;
@@ -27,5 +33,11 @@ std::ostream& operator<<( std::ostream &os, const PATH_ATTRIBUTE &attr );
 std::ostream& operator<<( std::ostream &os, const ORIGIN &orig );
 std::ostream& operator<<( std::ostream &os, const CONTENT &cont );
 std::ostream& operator<<( std::ostream &os, const BGP_CAP_CODE &cont );
+std::ostream& operator<<( std::ostream &os, const BGP_ERR_CODE &err );
+std::ostream& operator<<( std::ostream &os, const BGP_MSG_HDR_ERR &err );
+std::ostream& operator<<( std::ostream &os, const BGP_OPEN_ERR &err );
+std::ostream& operator<<( std::ostream &os, const BGP_UPDATE_ERR &err );
+std::ostream& operator<<( std::ostream &os, const BGP_FSM_ERR &err );
+std::ostream& operator<<( std::ostream &os, const BGP_CEASE_ERR &err );
 
 #endif

@@ -255,7 +255,7 @@ void bgp_fsm::on_receive( error_code ec, std::size_t length ) {
             rx_update( pkt );
             break;
         case bgp_type::NOTIFICATION:
-            logger.logInfo() << LOGS::FSM << "NOTIFICATION message" << std::endl;
+            rx_notification( pkt );
             break;
         case bgp_type::ROUTE_REFRESH:
             logger.logInfo() << LOGS::FSM << "ROUTE_REFRESH message" << std::endl;
@@ -421,4 +421,46 @@ void bgp_fsm::send_all_prefixes() {
         }
     }
     runtime->schedule_updates( scheduled );
+}
+
+void bgp_fsm::rx_notification( bgp_packet &pkt ) {
+    logger.logInfo() << LOGS::FSM << "NOTIFICATION message" << std::endl;
+    auto notification = pkt.get_notification();
+    switch( notification->code ) {
+    case BGP_ERR_CODE::MESSAGE_HEADER:
+        logger.logError() << "code: " << notification->code << 
+            "subcode: " << static_cast<BGP_MSG_HDR_ERR>( notification->subcode ) << 
+            "data:" << reinterpret_cast<char*>( notification->data ) << std::endl;
+        break;
+    case BGP_ERR_CODE::OPEN_MESSAGE:
+        logger.logError() << "code: " << notification->code << 
+            "subcode: " << static_cast<BGP_OPEN_ERR>( notification->subcode ) << 
+            "data:" << reinterpret_cast<char*>( notification->data ) << std::endl;
+        break;
+    case BGP_ERR_CODE::UPDATE_MESSAGE:
+        logger.logError() << "code: " << notification->code << 
+            "subcode: " << static_cast<BGP_UPDATE_ERR>( notification->subcode ) << 
+            "data:" << reinterpret_cast<char*>( notification->data ) << std::endl;
+        break;
+    case BGP_ERR_CODE::HOLD_TIMER_EXPIRED:
+        logger.logError() << "code: " << notification->code << 
+            "subcode: " << static_cast<int>( notification->subcode ) << 
+            "data:" << reinterpret_cast<char*>( notification->data ) << std::endl;
+        break;
+    case BGP_ERR_CODE::FSM_ERROR:
+        logger.logError() << "code: " << notification->code << 
+            "subcode: " << static_cast<BGP_FSM_ERR>( notification->subcode ) << 
+            "data:" << reinterpret_cast<char*>( notification->data ) << std::endl;
+        break;
+    case BGP_ERR_CODE::CEASE:
+        logger.logError() << "code: " << notification->code << 
+            "subcode: " << static_cast<BGP_CEASE_ERR>( notification->subcode ) << 
+            "data:" << reinterpret_cast<char*>( notification->data ) << std::endl;
+        break;
+    default:
+        logger.logError() << "code: " << notification->code << 
+            "subcode: " << static_cast<int>( notification->subcode ) << 
+            "data:" << reinterpret_cast<char*>( notification->data ) << std::endl;
+        break;
+    }
 }

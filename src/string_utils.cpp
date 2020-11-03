@@ -189,3 +189,171 @@ std::ostream& operator<<( std::ostream &os, const bgp_cap_t &cap ) {
     }
     return os;
 }
+
+std::ostream& operator<<( std::ostream &os, const BGP_ERR_CODE &err ) {
+    switch( err ) {
+    case BGP_ERR_CODE::MESSAGE_HEADER:
+        os << "Message Header";
+        break;
+    case BGP_ERR_CODE::OPEN_MESSAGE:
+        os << "Open Message";
+        break;
+    case BGP_ERR_CODE::UPDATE_MESSAGE:
+        os << "Update Message";
+        break;
+    case BGP_ERR_CODE::HOLD_TIMER_EXPIRED:
+        os << "Hold Timer Expired";
+        break;
+    case BGP_ERR_CODE::FSM_ERROR:
+        os << "FSM Error";
+        break;
+    case BGP_ERR_CODE::CEASE:
+        os << "Cease";
+        break;
+    default:
+        os << "Unknown (" << static_cast<int>( err ) << ")";
+        break;
+    }
+    return os;
+}
+
+std::ostream& operator<<( std::ostream &os, const BGP_MSG_HDR_ERR &err ) {
+    switch( err ) {
+    case BGP_MSG_HDR_ERR::BAD_MSG_LENGTH:
+        os << "Bad Message Length";
+        break;
+    case BGP_MSG_HDR_ERR::BAD_MSG_TYPE:
+        os << "Bad Message Type";
+        break;
+    case BGP_MSG_HDR_ERR::CONN_NOT_SYNCH:
+        os << "Connection not synchronized";
+        break;
+    default:
+        os << "Unknown (" << static_cast<int>( err ) << ")";
+        break;
+    }
+    return os;
+}
+
+std::ostream& operator<<( std::ostream &os, const BGP_OPEN_ERR &err ) {
+    switch( err ) {
+    case BGP_OPEN_ERR::BAD_BGP_ID:
+        os << "Bad BGP ID";
+        break;
+    case BGP_OPEN_ERR::BAD_PEER_AS:
+        os << "Bad Peer AS";
+        break;
+    case BGP_OPEN_ERR::UNACCEPTABLE_HOLD_TIME:
+        os << "Unacceptable Hold Time";
+        break;
+    case BGP_OPEN_ERR::UNSUPPORTED_CAP:
+        os << "Unsupported BGP Capability";
+        break;
+    case BGP_OPEN_ERR::UNSUPPORTED_OPT_PARAM:
+        os << "Unsupported BGP Option";
+        break;
+    case BGP_OPEN_ERR::UNSUPPORTED_VERSION:
+        os << "Unsupported BGP version";
+        break;
+    default:
+        os << "Unknown (" << static_cast<int>( err ) << ")";
+        break;
+    }
+    return os;
+}
+
+std::ostream& operator<<( std::ostream &os, const BGP_UPDATE_ERR &err ) {
+    switch( err ) {
+    case BGP_UPDATE_ERR::ATTR_FLAG_ERR:
+        os << "Attribute Flag Error";
+        break;
+    case BGP_UPDATE_ERR::ATTR_LEN_ERR:
+        os << "Attribute Length Error";
+        break;
+    case BGP_UPDATE_ERR::INV_NETWORK_FIELD:
+        os << "Invalid Network Field";
+        break;
+    case BGP_UPDATE_ERR::INV_NHOP_ATTR:
+        os << "Invalid NextHop Attribute";
+        break;
+    case BGP_UPDATE_ERR::INV_ORIGIN_ATTR:
+        os << "Invalid Origin Attribute";
+        break;
+    case BGP_UPDATE_ERR::MALFORMED_AS_PATH:
+        os << "Malformed AS_PATH";
+        break;
+    case BGP_UPDATE_ERR::MALFORMED_ATTR_LIST:
+        os << "Malformed Attribute List";
+        break;
+    case BGP_UPDATE_ERR::MISSING_WELL_KNOWN_ATTR:
+        os << "Missing Well-Known Attribute";
+        break;
+    case BGP_UPDATE_ERR::OPT_ATTR_ERR:
+        os << "Optional Attribute Error";
+        break;
+    case BGP_UPDATE_ERR::UNRECOGNIZED_WELL_KNOWN_ATTR:
+        os << "Unrecognized Well-Known Attribute";
+        break;
+    default:
+        os << "Unknown (" << static_cast<int>( err ) << ")";
+        break;
+    }
+    return os;
+}
+
+std::ostream& operator<<( std::ostream &os, const BGP_FSM_ERR &err ) {
+    switch( err ) {
+    case BGP_FSM_ERR::UNEXP_ESTABLISHED:
+        os << "Unexpected Packet in Established state";
+        break;
+    case BGP_FSM_ERR::UNEXP_OPENCONF:
+        os << "Unexpected Packet in OpenConf state";
+        break;
+    case BGP_FSM_ERR::UNEXP_OPENSENT:
+        os << "Unexpected Packet in OpenSent state";
+        break;
+    case BGP_FSM_ERR::UNSPEC_ERR:
+        os << "Unspecified Error";
+        break;
+    default:
+        os << "Unknown (" << static_cast<int>( err ) << ")";
+        break;
+    }
+    return os;
+}
+
+std::ostream& operator<<( std::ostream &os, const BGP_CEASE_ERR &err ) {
+    switch( err ) {
+    case BGP_CEASE_ERR::ADM_RESET:
+        os << "Administrative Reset";
+        break;
+    case BGP_CEASE_ERR::ADM_SHUTDOWN:
+        os << "Administrative Shutdown";
+        break;
+    case BGP_CEASE_ERR::CONN_COLLISION_RES:
+        os << "Connection Collision Resolution";
+        break;
+    case BGP_CEASE_ERR::CONN_REJECTED:
+        os << "Connection Rejected";
+        break;
+    case BGP_CEASE_ERR::HARD_RESET:
+        os << "Hard Reset";
+        break;
+    case BGP_CEASE_ERR::MAX_PREFIXES_REACHED:
+        os << "Maximum Prefixes Reached";
+        break;
+    case BGP_CEASE_ERR::OTH_CONF_CHANGE:
+        os << "Other Configuration Changed";
+        break;
+    case BGP_CEASE_ERR::OUT_OF_RES:
+        os << "Out Of Resources";
+        break;
+    case BGP_CEASE_ERR::PEER_DECONF:
+        os << "Peer Deconfigured";
+        break;
+    default:
+        os << "Unknown (" << static_cast<int>( err ) << ")";
+        break;
+    }
+    return os;
+}

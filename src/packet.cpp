@@ -191,6 +191,10 @@ bgp_open* bgp_packet::get_open() {
     return reinterpret_cast<bgp_open*>( data + sizeof( bgp_header ) );
 }
 
+bgp_notification* bgp_packet::get_notification() {
+    return reinterpret_cast<bgp_notification*>( data + sizeof( bgp_header ) );
+}
+
 uint8_t* bgp_packet::get_body() {
     return reinterpret_cast<uint8_t*>( data + sizeof( bgp_header ) );
 }

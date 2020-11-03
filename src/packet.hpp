@@ -248,6 +248,7 @@ struct bgp_packet {
     bgp_packet( uint8_t *begin, std::size_t l );
     bgp_header* get_header();
     bgp_open* get_open();
+    bgp_notification* get_notification();
     uint8_t* get_body();
     std::tuple<std::vector<nlri>,std::vector<path_attr_t>,std::vector<nlri>> process_update( bool four_byte_asn );
 };
