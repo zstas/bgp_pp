@@ -78,6 +78,40 @@ std::ostream& operator<<( std::ostream &os, const bgp_open *open ) {
     return os;
 }
 
+std::ostream& operator<<( std::ostream &os, const bgp_notification *notification ) {
+    switch( notification->code ) {
+    case BGP_ERR_CODE::MESSAGE_HEADER:
+        os << "code: " << notification->code << 
+            "subcode: " << static_cast<BGP_MSG_HDR_ERR>( notification->subcode ) << std::endl;
+        break;
+    case BGP_ERR_CODE::OPEN_MESSAGE:
+        os << "code: " << notification->code << 
+            "subcode: " << static_cast<BGP_OPEN_ERR>( notification->subcode ) << std::endl;
+        break;
+    case BGP_ERR_CODE::UPDATE_MESSAGE:
+        os << "code: " << notification->code << 
+            "subcode: " << static_cast<BGP_UPDATE_ERR>( notification->subcode ) << std::endl;
+        break;
+    case BGP_ERR_CODE::HOLD_TIMER_EXPIRED:
+        os << "code: " << notification->code << 
+            "subcode: " << static_cast<int>( notification->subcode ) << std::endl;
+        break;
+    case BGP_ERR_CODE::FSM_ERROR:
+        os << "code: " << notification->code << 
+            "subcode: " << static_cast<BGP_FSM_ERR>( notification->subcode ) << std::endl;
+        break;
+    case BGP_ERR_CODE::CEASE:
+        os << "code: " << notification->code << 
+            "subcode: " << static_cast<BGP_CEASE_ERR>( notification->subcode ) << std::endl;
+        break;
+    default:
+        os << "code: " << notification->code << 
+            "subcode: " << static_cast<int>( notification->subcode ) << std::endl;
+        break;
+    }
+    return os;
+}
+
 std::ostream& operator<<( std::ostream &os, const path_attr_t &attr ) {
     os << "Type: " << attr.type;
     os << " Length: " << attr.bytes.size();

@@ -426,41 +426,58 @@ void bgp_fsm::send_all_prefixes() {
 void bgp_fsm::rx_notification( bgp_packet &pkt ) {
     logger.logInfo() << LOGS::FSM << "NOTIFICATION message" << std::endl;
     auto notification = pkt.get_notification();
-    switch( notification->code ) {
-    case BGP_ERR_CODE::MESSAGE_HEADER:
-        logger.logError() << "code: " << notification->code << 
-            "subcode: " << static_cast<BGP_MSG_HDR_ERR>( notification->subcode ) << 
-            "data:" << reinterpret_cast<char*>( notification->data ) << std::endl;
-        break;
-    case BGP_ERR_CODE::OPEN_MESSAGE:
-        logger.logError() << "code: " << notification->code << 
-            "subcode: " << static_cast<BGP_OPEN_ERR>( notification->subcode ) << 
-            "data:" << reinterpret_cast<char*>( notification->data ) << std::endl;
-        break;
-    case BGP_ERR_CODE::UPDATE_MESSAGE:
-        logger.logError() << "code: " << notification->code << 
-            "subcode: " << static_cast<BGP_UPDATE_ERR>( notification->subcode ) << 
-            "data:" << reinterpret_cast<char*>( notification->data ) << std::endl;
-        break;
-    case BGP_ERR_CODE::HOLD_TIMER_EXPIRED:
-        logger.logError() << "code: " << notification->code << 
-            "subcode: " << static_cast<int>( notification->subcode ) << 
-            "data:" << reinterpret_cast<char*>( notification->data ) << std::endl;
-        break;
-    case BGP_ERR_CODE::FSM_ERROR:
-        logger.logError() << "code: " << notification->code << 
-            "subcode: " << static_cast<BGP_FSM_ERR>( notification->subcode ) << 
-            "data:" << reinterpret_cast<char*>( notification->data ) << std::endl;
-        break;
-    case BGP_ERR_CODE::CEASE:
-        logger.logError() << "code: " << notification->code << 
-            "subcode: " << static_cast<BGP_CEASE_ERR>( notification->subcode ) << 
-            "data:" << reinterpret_cast<char*>( notification->data ) << std::endl;
-        break;
-    default:
-        logger.logError() << "code: " << notification->code << 
-            "subcode: " << static_cast<int>( notification->subcode ) << 
-            "data:" << reinterpret_cast<char*>( notification->data ) << std::endl;
-        break;
+    logger.logInfo() << LOGS::FSM << notification << std::endl;
+    if( sock.has_value() ) {
+        sock->close();
+        sock.reset();
     }
+}
+
+void bgp_fsm::tx_notification( BGP_ERR_CODE code, BGP_MSG_HDR_ERR err, const std::vector<uint8_t> &data ) {
+    tx_notification( code, static_cast<uint8_t>( err ), data );
+}
+
+void bgp_fsm::tx_notification( BGP_ERR_CODE code, BGP_OPEN_ERR err, const std::vector<uint8_t> &data ) {
+    tx_notification( code, static_cast<uint8_t>( err ), data );
+}
+
+void bgp_fsm::tx_notification( BGP_ERR_CODE code, BGP_UPDATE_ERR err, const std::vector<uint8_t> &data ) {
+    tx_notification( code, static_cast<uint8_t>( err ), data );
+}
+
+void bgp_fsm::tx_notification( BGP_ERR_CODE code, BGP_FSM_ERR err, const std::vector<uint8_t> &data ) {
+    tx_notification( code, static_cast<uint8_t>( err ), data );
+}
+
+void bgp_fsm::tx_notification( BGP_ERR_CODE code, BGP_CEASE_ERR err, const std::vector<uint8_t> &data ) {
+    tx_notification( code, static_cast<uint8_t>( err ), data );
+}
+
+void bgp_fsm::tx_notification( BGP_ERR_CODE code, uint8_t subcode, const std::vector<uint8_t> &data ) {
+    logger.logInfo() << LOGS::FSM << "Sending NOTIFICATION message" << std::endl;
+    auto pkt_buf = std::make_shared<std::vector<uint8_t>>();
+    auto len = sizeof( bgp_header ) + sizeof( bgp_notification );
+    pkt_buf->reserve( len + data.size() );
+    pkt_buf->resize( len );
+    bgp_packet pkt { pkt_buf->data(), pkt_buf->size() };
+
+    // header
+    auto header = pkt.get_header();
+    header->type = bgp_type::NOTIFICATION;
+    header->length = len + data.size();
+    std::fill( header->marker.begin(), header->marker.end(), 0xFF );
+
+    // notification
+    auto notification = pkt.get_notification();
+    notification->code = code;
+    notification->subcode = subcode;
+
+    pkt_buf->insert( pkt_buf->end(), data.begin(), data.end() );
+
+    logger.logInfo() << LOGS::FSM << notification << std::endl;
+    if( !sock.has_value() ) {
+        logger.logInfo() << LOGS::FSM << "Cannot send NOTIFICATION because there are no active socket" << std::endl;
+        return;
+    }
+    sock->async_send( boost::asio::buffer( *pkt_buf ), std::bind( &bgp_fsm::on_send, shared_from_this(), pkt_buf, std::placeholders::_1, std::placeholders::_2 ) );
 }

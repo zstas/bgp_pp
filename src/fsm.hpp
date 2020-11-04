@@ -20,6 +20,13 @@ struct bgp_neighbour_v4;
 struct GlobalConf;
 struct bgp_packet;
 struct bgp_cap_t;
+enum class BGP_CAP_CODE : uint8_t;
+enum class BGP_ERR_CODE : uint8_t;
+enum class BGP_MSG_HDR_ERR : uint8_t;
+enum class BGP_OPEN_ERR : uint8_t;
+enum class BGP_UPDATE_ERR : uint8_t;
+enum class BGP_FSM_ERR : uint8_t;
+enum class BGP_CEASE_ERR : uint8_t;
 
 #include "table.hpp"
 
@@ -75,6 +82,12 @@ struct bgp_fsm : public std::enable_shared_from_this<bgp_fsm> {
     void tx_update( const std::vector<nlri> &prefixes, std::shared_ptr<std::vector<path_attr_t>> path, const std::vector<nlri> &withdrawn );
 
     void rx_notification( bgp_packet &pkt );
+    void tx_notification( BGP_ERR_CODE code, BGP_MSG_HDR_ERR err, const std::vector<uint8_t> &data );
+    void tx_notification( BGP_ERR_CODE code, BGP_OPEN_ERR err, const std::vector<uint8_t> &data );
+    void tx_notification( BGP_ERR_CODE code, BGP_UPDATE_ERR err, const std::vector<uint8_t> &data );
+    void tx_notification( BGP_ERR_CODE code, BGP_FSM_ERR err, const std::vector<uint8_t> &data );
+    void tx_notification( BGP_ERR_CODE code, BGP_CEASE_ERR err, const std::vector<uint8_t> &data );
+    void tx_notification( BGP_ERR_CODE code, uint8_t err, const std::vector<uint8_t> &data );
 
     void send_all_prefixes();
 };
