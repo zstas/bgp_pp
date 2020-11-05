@@ -204,3 +204,13 @@ void bgp_table_v4::best_path_selection() {
         best->second.isBest = true;
     }
 }
+
+void bgp_table_v4::purge_peer( std::shared_ptr<bgp_fsm> peer ) {
+    for( auto it = table.begin(); it != table.end(); ) {
+        if( it->second.source == peer ) {
+            it = table.erase( it );
+        } else {
+            it++;
+        }
+    }
+}

@@ -425,6 +425,10 @@ void bgp_fsm::send_all_prefixes() {
 
 void bgp_fsm::rx_notification( bgp_packet &pkt ) {
     logger.logInfo() << LOGS::FSM << "NOTIFICATION message" << std::endl;
+
+    // clear all nlris from this peer
+    table.purge_peer( shared_from_this() );
+
     auto notification = pkt.get_notification();
     logger.logInfo() << LOGS::FSM << notification << std::endl;
     if( sock.has_value() ) {
@@ -455,6 +459,10 @@ void bgp_fsm::tx_notification( BGP_ERR_CODE code, BGP_CEASE_ERR err, const std::
 
 void bgp_fsm::tx_notification( BGP_ERR_CODE code, uint8_t subcode, const std::vector<uint8_t> &data ) {
     logger.logInfo() << LOGS::FSM << "Sending NOTIFICATION message" << std::endl;
+
+    // clear all nlris from this peer
+    table.purge_peer( shared_from_this() );
+
     auto pkt_buf = std::make_shared<std::vector<uint8_t>>();
     auto len = sizeof( bgp_header ) + sizeof( bgp_notification );
     pkt_buf->reserve( len + data.size() );
