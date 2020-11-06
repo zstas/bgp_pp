@@ -2,6 +2,7 @@
 
 using address_v4 = boost::asio::ip::address_v4;
 using prefix_v4 = boost::asio::ip::network_v4;
+using nlri = prefix_v4;
 
 #include "evloop.hpp"
 #include "log.hpp"
@@ -44,7 +45,7 @@ void EVLoop::on_accept( const boost::system::error_code &ec ) {
     accpt.async_accept( sock, std::bind( &EVLoop::on_accept, shared_from_this(), std::placeholders::_1 ) );
 }
 
-void EVLoop::schedule_updates( std::list<nlri> &v ) {
+void EVLoop::schedule_updates( std::set<nlri> &v ) {
     for( auto const &n: v ) {
         planning_updates.push_back( n );
     }

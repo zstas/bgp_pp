@@ -6,6 +6,7 @@
 
 using address_v4 = boost::asio::ip::address_v4;
 using prefix_v4 = boost::asio::ip::network_v4;
+using nlri = prefix_v4;
 
 #include "main.hpp"
 #include "config.hpp"

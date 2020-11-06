@@ -4,6 +4,7 @@
 
 using address_v4 = boost::asio::ip::address_v4;
 using prefix_v4 = boost::asio::ip::network_v4;
+using nlri = prefix_v4;
 
 #include "table.hpp"
 #include "fsm.hpp"
@@ -11,8 +12,6 @@ using prefix_v4 = boost::asio::ip::network_v4;
 #include "config.hpp"
 #include "log.hpp"
 #include "string_utils.hpp"
-
-using prefix_v4 = boost::asio::ip::network_v4;
 
 extern Logger logger;
 
@@ -205,12 +204,16 @@ void bgp_table_v4::best_path_selection() {
     }
 }
 
-void bgp_table_v4::purge_peer( std::shared_ptr<bgp_fsm> peer ) {
+std::set<nlri> bgp_table_v4::purge_peer( std::shared_ptr<bgp_fsm> peer ) {
+    std::set<nlri> ret;
     for( auto it = table.begin(); it != table.end(); ) {
         if( it->second.source == peer ) {
+            ret.emplace( it->first );
             it = table.erase( it );
         } else {
             it++;
         }
     }
+    best_path_selection();
+    return ret;
 }

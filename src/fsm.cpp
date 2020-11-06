@@ -175,7 +175,7 @@ void bgp_fsm::rx_keepalive( bgp_packet &pkt ) {
 }
 
 void bgp_fsm::rx_update( bgp_packet &pkt ) {
-    std::list<nlri> schedule;
+    std::set<nlri> schedule;
     auto cap_it = std::find_if( caps.begin(), caps.end(), []( const bgp_cap_t &val ) -> bool { return val.code == BGP_CAP_CODE::FOUR_OCT_AS; } );
     auto four_byte_asn = ( cap_it != caps.end() );
     auto [ withdrawn_routes, path_attrs, routes ] = pkt.process_update( four_byte_asn );
@@ -194,13 +194,13 @@ void bgp_fsm::rx_update( bgp_packet &pkt ) {
     }
 
     for( auto &wroute: withdrawn_routes ) {
-        schedule.push_back( wroute );
+        schedule.emplace( wroute );
         logger.logInfo() << LOGS::FSM << "Received withdrawn route: " << wroute << std::endl;
         table.del_path( wroute, shared_from_this() );
     }
 
     for( auto &route: routes ) {
-        schedule.push_back( route );
+        schedule.emplace( route );
         logger.logInfo() << LOGS::FSM << "Received route: " << route << std::endl;
         table.add_path( route, path_attrs, shared_from_this() );
     }
@@ -409,15 +409,15 @@ void bgp_fsm::tx_update( const std::vector<nlri> &prefixes, std::shared_ptr<std:
 }
 
 void bgp_fsm::send_all_prefixes() {
-    std::list<nlri> scheduled;
+    std::set<nlri> scheduled;
     bool ibgp = ( gconf.my_as == conf.remote_as );
     for( auto const &[ prefix, path ] : table.table ) {
         if( path.source && path.source->conf.remote_as == gconf.my_as ) {
             if( !ibgp ) {
-                scheduled.push_back( prefix );
+                scheduled.emplace( prefix );
             }
         } else {
-            scheduled.push_back( prefix );
+            scheduled.emplace( prefix );
         }
     }
     runtime->schedule_updates( scheduled );
@@ -427,7 +427,8 @@ void bgp_fsm::rx_notification( bgp_packet &pkt ) {
     logger.logInfo() << LOGS::FSM << "NOTIFICATION message" << std::endl;
 
     // clear all nlris from this peer
-    table.purge_peer( shared_from_this() );
+    auto schedule = table.purge_peer( shared_from_this() );
+    runtime->schedule_updates( schedule );
 
     auto notification = pkt.get_notification();
     logger.logInfo() << LOGS::FSM << notification << std::endl;
@@ -461,7 +462,8 @@ void bgp_fsm::tx_notification( BGP_ERR_CODE code, uint8_t subcode, const std::ve
     logger.logInfo() << LOGS::FSM << "Sending NOTIFICATION message" << std::endl;
 
     // clear all nlris from this peer
-    table.purge_peer( shared_from_this() );
+    auto schedule = table.purge_peer( shared_from_this() );
+    runtime->schedule_updates( schedule );
 
     auto pkt_buf = std::make_shared<std::vector<uint8_t>>();
     auto len = sizeof( bgp_header ) + sizeof( bgp_notification );

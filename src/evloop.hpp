@@ -1,7 +1,7 @@
 #ifndef EVLOOP_HPP
 #define EVLOOP_HPP
 
-#include <list>
+#include <set>
 #include <boost/asio.hpp>
 #include <boost/asio/steady_timer.hpp>
 
@@ -18,7 +18,7 @@ public:
     
     std::map<address_v4,std::shared_ptr<bgp_fsm>> neighbours;
     bgp_table_v4 table;
-    void schedule_updates( std::list<nlri> &v );
+    void schedule_updates( std::set<nlri> &v );
 private:
     void on_accept( const boost::system::error_code &ec );
     void on_send_updates( const boost::system::error_code &ec );
