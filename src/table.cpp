@@ -12,8 +12,10 @@ using nlri = prefix_v4;
 #include "config.hpp"
 #include "log.hpp"
 #include "string_utils.hpp"
+#include "evloop.hpp"
 
 extern Logger logger;
+extern std::shared_ptr<EVLoop> runtime;
 
 bgp_path::bgp_path( std::shared_ptr<std::vector<path_attr_t>> a, std::shared_ptr<bgp_fsm> s ):
     attrs( std::move( a ) ),
@@ -60,8 +62,10 @@ std::vector<uint32_t> bgp_path::get_as_path() const {
 }
 
 
-bgp_table_v4::bgp_table_v4( GlobalConf &c ):
-    conf( c )
+bgp_table_v4::bgp_table_v4( boost::asio::io_context &i, GlobalConf &c ):
+    io( i ),
+    conf( c ),
+    send_updates( io )
 {
     for( auto &r: conf.originate_routes ) {
         std::vector<path_attr_t> attrs;
@@ -82,6 +86,8 @@ bgp_table_v4::bgp_table_v4( GlobalConf &c ):
 }
 
 void bgp_table_v4::add_path( const prefix_v4 &prefix, std::vector<path_attr_t> attr, std::shared_ptr<bgp_fsm> nei ) {
+    scheduled_updates.emplace( prefix );
+    schedule_updates();
     // Add local preference attribute, if it doesn't exist
     if(
         auto it = std::find_if(
@@ -129,6 +135,8 @@ void bgp_table_v4::add_path( const prefix_v4 &prefix, std::vector<path_attr_t> a
 }
 
 void bgp_table_v4::del_path( const prefix_v4 &prefix, std::shared_ptr<bgp_fsm> nei ) {
+    scheduled_updates.emplace( prefix );
+    schedule_updates();
     for( auto prefixIt = table.find( prefix ); prefixIt != table.end(); prefixIt++ ) {
         if( prefixIt->second.source != nei ) {
             continue;
@@ -204,16 +212,57 @@ void bgp_table_v4::best_path_selection() {
     }
 }
 
-std::set<nlri> bgp_table_v4::purge_peer( std::shared_ptr<bgp_fsm> peer ) {
-    std::set<nlri> ret;
+void bgp_table_v4::purge_peer( std::shared_ptr<bgp_fsm> peer ) {
     for( auto it = table.begin(); it != table.end(); ) {
         if( it->second.source == peer ) {
-            ret.emplace( it->first );
+            scheduled_updates.emplace( it->first );
             it = table.erase( it );
         } else {
             it++;
         }
     }
-    best_path_selection();
-    return ret;
+    schedule_updates();
+}
+
+void bgp_table_v4::schedule_updates() {
+    send_updates.expires_from_now( std::chrono::seconds( 1 ) );
+    send_updates.async_wait( std::bind( &bgp_table_v4::on_send_updates, this, std::placeholders::_1 ) );
+}
+
+void bgp_table_v4::on_send_updates( const boost::system::error_code &ec ) {
+    if( ec ) {
+        logger.logError() << LOGS::EVENT_LOOP << "On timer for sending updates: " << ec.message() << std::endl;
+    }
+    std::vector<nlri> withdrawn_update;
+    std::map<std::shared_ptr<std::vector<path_attr_t>>,std::vector<nlri>> pending_update;
+    for( auto const &n: scheduled_updates ) {
+        auto it = table.end();
+        if( it = table.find( n ); it == table.end() ) {
+            withdrawn_update.push_back( n );
+            continue;
+        }
+        if( auto updIt = pending_update.find( it->second.attrs ); updIt != pending_update.end() ) {
+            updIt->second.push_back( n );
+        } else {
+            std::vector<nlri> new_vec { n };
+            pending_update.emplace( it->second.attrs, new_vec );
+        }
+    }
+
+    for( auto const &[ add, nei ]: runtime->neighbours ) {
+        // send updates only for eBGP neighbours
+        if( nei->conf.remote_as == conf.my_as ) {
+            continue;
+        }
+
+        if( nei->state != FSM_STATE::ESTABLISHED ) {
+            continue;
+        }
+
+        auto cur_withdrawn = withdrawn_update;
+        for( auto const &[ path, n_vec ]: pending_update ) {
+            nei->tx_update( n_vec, path, cur_withdrawn );
+            cur_withdrawn.clear();
+        }
+    }
 }

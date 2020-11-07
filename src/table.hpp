@@ -4,6 +4,8 @@
 #include <tuple>
 #include <vector>
 #include <set>
+#include <boost/asio.hpp>
+#include <boost/asio/steady_timer.hpp>
 
 struct path_attr_t;
 struct bgp_fsm;
@@ -35,14 +37,22 @@ struct bgp_path {
     std::vector<uint32_t> get_as_path() const;
 };
 
-struct bgp_table_v4 {
-    bgp_table_v4( GlobalConf &c );
+class bgp_table_v4 {
+public:
+    bgp_table_v4( boost::asio::io_context &i, GlobalConf &c );
     GlobalConf &conf;
     std::multimap<prefix_v4,bgp_path> table;
     void add_path( const prefix_v4 &prefix, std::vector<path_attr_t> attr, std::shared_ptr<bgp_fsm> peer );
     void del_path( const prefix_v4 &prefix, std::shared_ptr<bgp_fsm> peer );
-    std::set<nlri> purge_peer( std::shared_ptr<bgp_fsm> peer );
+    void purge_peer( std::shared_ptr<bgp_fsm> peer );
     void best_path_selection();
+private:
+    void schedule_updates();
+    void on_send_updates( const boost::system::error_code &ec );
+
+    boost::asio::io_context &io;
+    boost::asio::steady_timer send_updates;
+    std::set<nlri> scheduled_updates;
 };
 
 #endif

@@ -214,7 +214,6 @@ void bgp_fsm::rx_update( bgp_packet &pkt ) {
     }
 
     table.best_path_selection();
-    runtime->schedule_updates( schedule );
 }
 
 void bgp_fsm::on_receive( error_code ec, std::size_t length ) {
@@ -420,15 +419,13 @@ void bgp_fsm::send_all_prefixes() {
             scheduled.emplace( prefix );
         }
     }
-    runtime->schedule_updates( scheduled );
 }
 
 void bgp_fsm::rx_notification( bgp_packet &pkt ) {
     logger.logInfo() << LOGS::FSM << "NOTIFICATION message" << std::endl;
 
     // clear all nlris from this peer
-    auto schedule = table.purge_peer( shared_from_this() );
-    runtime->schedule_updates( schedule );
+    table.purge_peer( shared_from_this() );
 
     auto notification = pkt.get_notification();
     logger.logInfo() << LOGS::FSM << notification << std::endl;
@@ -462,8 +459,7 @@ void bgp_fsm::tx_notification( BGP_ERR_CODE code, uint8_t subcode, const std::ve
     logger.logInfo() << LOGS::FSM << "Sending NOTIFICATION message" << std::endl;
 
     // clear all nlris from this peer
-    auto schedule = table.purge_peer( shared_from_this() );
-    runtime->schedule_updates( schedule );
+    table.purge_peer( shared_from_this() );
 
     auto pkt_buf = std::make_shared<std::vector<uint8_t>>();
     auto len = sizeof( bgp_header ) + sizeof( bgp_notification );
