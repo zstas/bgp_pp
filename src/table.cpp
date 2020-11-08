@@ -111,6 +111,7 @@ void bgp_table_v4::add_path( const prefix_v4 &prefix, std::vector<path_attr_t> a
         prefixIt->second.time = std::chrono::system_clock::now();
         prefixIt->second.attrs.reset();
         prefixIt->second.attrs = std::make_shared<std::vector<path_attr_t>>( std::move( attr ) );
+        best_path_selection( prefix );
         return;
     }
     // If not, we will look if path already exists
@@ -132,6 +133,7 @@ void bgp_table_v4::add_path( const prefix_v4 &prefix, std::vector<path_attr_t> a
             std::forward_as_tuple( pathIt->second )
         );
     }
+    best_path_selection( prefix );
 }
 
 void bgp_table_v4::del_path( const prefix_v4 &prefix, std::shared_ptr<bgp_fsm> nei ) {
@@ -142,6 +144,7 @@ void bgp_table_v4::del_path( const prefix_v4 &prefix, std::shared_ptr<bgp_fsm> n
             continue;
         }
         table.erase( prefixIt );
+        best_path_selection( prefix );
         return;
     }
 }
@@ -205,6 +208,53 @@ void bgp_table_v4::best_path_selection() {
             }
             // TODO: other BPS conditionds
         }
+    }
+
+    if( best == table.end() ) {
+        best->second.isBest = true;
+    }
+}
+
+void bgp_table_v4::best_path_selection( const prefix_v4 &prefix ) {
+    auto range = table.equal_range( prefix );
+    std::multimap<prefix_v4,bgp_path>::iterator best = range.first;
+
+    for( auto it = range.first; it != range.second; it++ ) {
+        auto &path = it->second;
+        path.isBest = false;
+
+        try {
+            if( it->second.get_local_pref() > best->second.get_local_pref() ) {
+                best = it; continue;
+            }
+        } catch( std::exception &e ) {
+            logger.logError() << LOGS::TABLE << e.what() << std::endl;
+        }
+
+        try {
+            if( it->second.get_as_path().size() < best->second.get_as_path().size() ) {
+                best = it; continue;
+            }
+        } catch( std::exception &e ) {
+            logger.logError() << LOGS::TABLE << e.what() << std::endl;
+        }
+
+        try {
+            if( it->second.get_origin() < best->second.get_origin() ) {
+                best = it; continue;
+            }
+        } catch( std::exception &e ) {
+            logger.logError() << LOGS::TABLE << e.what() << std::endl;
+        }
+
+        try {
+            if( it->second.get_med() > best->second.get_med() ) {
+                best = it; continue;
+            }
+        } catch( std::exception &e ) {
+            logger.logError() << LOGS::TABLE << e.what() << std::endl;
+        }
+        // TODO: other BPS conditionds
     }
 
     if( best == table.end() ) {

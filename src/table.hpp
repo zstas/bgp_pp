@@ -46,6 +46,7 @@ public:
     void del_path( const prefix_v4 &prefix, std::shared_ptr<bgp_fsm> peer );
     void purge_peer( std::shared_ptr<bgp_fsm> peer );
     void best_path_selection();
+    void best_path_selection( const prefix_v4 &prefix );
 private:
     void schedule_updates();
     void on_send_updates( const boost::system::error_code &ec );
