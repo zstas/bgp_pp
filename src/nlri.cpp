@@ -10,20 +10,25 @@ using prefix_v4 = boost::asio::ip::network_v4;
 
 #include "packet.hpp"
 
-NLRI::NLRI( uint8_t *p, uint16_t len ):
-    nlri_len( len )
+NLRI::NLRI( BGP_AFI a, uint8_t *p ):
+    afi( a )
 {
-    auto bytes = len / 8;
-    if( len % 8 != 0 ) {
+    nlri_len = *p;
+    p++;
+    auto bytes = nlri_len / 8;
+    if( nlri_len % 8 != 0 ) {
         bytes++;
     }
     data = std::vector<uint8_t>( p, p + bytes );
 }
 
-NLRI::NLRI( BGP_AFI afi, const std::string &prefix ) {
+NLRI::NLRI( BGP_AFI a, const std::string &prefix ):
+    afi( a ) 
+{
+    std::string address;
     if( auto it = prefix.find( '/' ); it != prefix.npos ) {
-        auto substr = prefix.substr( it + 1 );
-        nlri_len = std::stoi( substr );
+        nlri_len = std::stoi( prefix.substr( it + 1 ) );
+        address = prefix.substr( 0, it );
     } else {
         throw std::runtime_error( "Can't find prefix len" );
     }
@@ -38,20 +43,22 @@ NLRI::NLRI( BGP_AFI afi, const std::string &prefix ) {
             throw std::runtime_error( "Prefix len is too long" );
         }
         char buf[ 4 ];
-        if( inet_pton( AF_INET, prefix.c_str(), buf ) != 1 ) {
+        if( inet_pton( AF_INET, address.c_str(), buf ) != 1 ) {
             throw std::runtime_error( "Cannot convert from IPv4 prefix representation" );
         }
         std::copy( buf, buf + bytes, data.data() );
+        break;
     }
     case BGP_AFI::IPv6: {
         if( bytes > 16 ) {
             throw std::runtime_error( "Prefix len is too long" );
         }
         char buf[ 16 ];
-        if( inet_pton( AF_INET6, prefix.c_str(), data.data() ) != 1 ) {
+        if( inet_pton( AF_INET6, address.c_str(), buf ) != 1 ) {
             throw std::runtime_error( "Cannot convert from IPv6 prefix representation" );
         }
         std::copy( buf, buf + bytes, data.data() );
+        break;
     }
     default:
         throw std::runtime_error( "Unknown AF" );
@@ -67,30 +74,38 @@ std::vector<uint8_t> NLRI::serialize() const {
     return ret;
 }
 
-std::string NLRI::as_ipv4() const {
-    char buf[ INET_ADDRSTRLEN ];
-    std::array<uint8_t,4> address;
-    std::fill( address.begin(), address.end(), 0 );
-    std::copy( data.begin(), data.end(), address.begin() );
-
-    auto ret = inet_ntop( AF_INET, address.data(), buf, sizeof( buf ) );
-    if( ret != nullptr ) {
-        return ret;
-    } else {
-        return {};
+std::ostream& operator<<( std::ostream &os, const NLRI &n ) {
+    switch( n.afi ) {
+    case BGP_AFI::IPv4: {
+        char buf[ INET_ADDRSTRLEN ];
+        std::array<uint8_t,4> address;
+        std::fill( address.begin(), address.end(), 0 );
+        std::copy( n.data.begin(), n.data.end(), address.begin() );
+        if( auto ret = inet_ntop( AF_INET, address.data(), buf, sizeof( buf ) ); ret != nullptr ) {
+            os << buf << "/" << n.nlri_len;
+        } else {
+            os << "Invalid Data";
+        }
+        break;
     }
-}
-
-std::string NLRI::as_ipv6() const {
-    char buf[ INET6_ADDRSTRLEN ];
-    std::array<uint8_t,16> address;
-    std::fill( address.begin(), address.end(), 0 );
-    std::copy( data.begin(), data.end(), address.begin() );
-
-    auto ret = inet_ntop( AF_INET6, address.data(), buf, sizeof( buf ) );
-    if( ret != nullptr ) {
-        return ret;
-    } else {
-        return {};
+    case BGP_AFI::IPv6: {
+        char buf[ INET6_ADDRSTRLEN ];
+        std::array<uint8_t,16> address;
+        std::fill( address.begin(), address.end(), 0 );
+        std::copy( n.data.begin(), n.data.end(), address.begin() );
+        if( auto ret = inet_ntop( AF_INET6, address.data(), buf, sizeof( buf ) ); ret != nullptr ) {
+            os << buf << "/" << n.nlri_len;
+        } else {
+            os << "Invalid Data";
+        }
+        break;
     }
+    default:
+        os << "Unknown AFI ";
+        for( auto const &b : n.data ) {
+            os << static_cast<int>( b ) << ":"; 
+        }
+        os << "\b" << "/" << n.nlri_len;
+    }
+    return os;
 }
