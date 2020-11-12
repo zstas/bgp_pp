@@ -7,8 +7,6 @@
 #include <boost/asio/ip/network_v4.hpp>
 
 using address_v4 = boost::asio::ip::address_v4;
-using prefix_v4 = boost::asio::ip::network_v4;
-using nlri = prefix_v4;
 
 #include "cli.hpp"
 #include "evloop.hpp"
@@ -17,6 +15,7 @@ using nlri = prefix_v4;
 #include "log.hpp"
 #include "string_utils.hpp"
 #include "message.hpp"
+#include "nlri.hpp"
 #include "config.hpp"
 
 extern Logger logger;

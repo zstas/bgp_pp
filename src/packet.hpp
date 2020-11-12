@@ -3,6 +3,8 @@
 
 #include "net_integer.hpp"
 
+class NLRI;
+
 enum class PATH_ATTRIBUTE : uint8_t {
     ORIGIN = 1,
     AS_PATH = 2,
@@ -167,7 +169,7 @@ struct path_attr_t {
 
     void make_local_pref( uint32_t val );
     void make_origin( ORIGIN o );
-    void make_nexthop( const address_v4 &a );
+    void make_nexthop( const NLRI &a );
     void make_nexthop( const boost::asio::ip::address &a );
     void make_as_path( std::vector<uint32_t> aspath );
 
@@ -177,9 +179,6 @@ struct path_attr_t {
 };
 
 bool operator==( const path_attr_t &lhs, const path_attr_t &rhs );
-
-using nlri = prefix_v4;
-using withdrawn_routes = prefix_v4;
 
 enum class bgp_type : uint8_t {
     OPEN = 1,
@@ -250,7 +249,7 @@ struct bgp_packet {
     bgp_open* get_open();
     bgp_notification* get_notification();
     uint8_t* get_body();
-    std::tuple<std::vector<nlri>,std::vector<path_attr_t>,std::vector<nlri>> process_update( bool four_byte_asn );
+    std::tuple<std::vector<NLRI>,std::vector<path_attr_t>,std::vector<NLRI>> process_update( bool four_byte_asn );
 };
 
 #endif

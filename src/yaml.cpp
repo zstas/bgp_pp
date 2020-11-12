@@ -1,10 +1,12 @@
-#include <boost/asio/ip/network_v4.hpp>
+#include <boost/asio/ip/address.hpp>
+#include <boost/asio/ip/address_v4.hpp>
 #include <yaml-cpp/yaml.h>
 
 using address_v4 = boost::asio::ip::address_v4;
-using prefix_v4 = boost::asio::ip::network_v4;
 
 #include "yaml.hpp"
+#include "nlri.hpp"
+#include "packet.hpp"
 #include "config.hpp"
 
 YAML::Node YAML::convert<GlobalConf>::encode(const GlobalConf& rhs) {
@@ -69,7 +71,7 @@ YAML::Node YAML::convert<RoutePolicy>::encode(const RoutePolicy& rhs) {
 
 bool YAML::convert<RoutePolicy>::decode(const YAML::Node& node, RoutePolicy& rhs) {
     if( node[ "match_prefix_v4"].IsDefined() ) {
-        rhs.match_prefix_v4.emplace( boost::asio::ip::make_network_v4( node[ "match_prefix_v4" ].as<std::string>() ) );
+        rhs.match_prefix_v4.emplace( BGP_AFI::IPv4, node[ "match_prefix_v4" ].as<std::string>() );
     }
     if( node[ "match_nexthop"].IsDefined() ) {
         rhs.match_nexthop.emplace( boost::asio::ip::make_address_v4( node[ "match_nexthop" ].as<std::string>() ) );
@@ -96,7 +98,7 @@ YAML::Node YAML::convert<OrigEntry>::encode(const OrigEntry& rhs) {
 }
 
 bool YAML::convert<OrigEntry>::decode(const YAML::Node& node, OrigEntry& rhs) {
-    rhs.prefix = boost::asio::ip::make_network_v4( node[ "prefix" ].as<std::string>() );
+    rhs.prefix = NLRI( BGP_AFI::IPv4, node[ "prefix" ].as<std::string>() );
     if( node[ "policy_name"].IsDefined() ) {
         rhs.policy_name.emplace( node[ "policy_name" ].as<std::string>() );
     }

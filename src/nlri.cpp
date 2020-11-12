@@ -2,6 +2,7 @@
 
 #include <stdexcept>
 #include <arpa/inet.h>
+#include <sstream>
 
 #include <boost/asio/ip/address.hpp>
 #include <boost/asio/ip/network_v4.hpp>
@@ -10,11 +11,10 @@ using prefix_v4 = boost::asio::ip::network_v4;
 
 #include "packet.hpp"
 
-NLRI::NLRI( BGP_AFI a, uint8_t *p ):
-    afi( a )
+NLRI::NLRI( BGP_AFI a, uint8_t *p, uint8_t len  ):
+    afi( a ),
+    nlri_len( len )
 {
-    nlri_len = *p;
-    p++;
     auto bytes = nlri_len / 8;
     if( nlri_len % 8 != 0 ) {
         bytes++;
@@ -65,6 +65,18 @@ NLRI::NLRI( BGP_AFI a, const std::string &prefix ):
     }
 }
 
+bool operator<( const NLRI &lhv,const NLRI &rhv ) {
+    return std::tie( lhv.afi, lhv.data, lhv.nlri_len ) < std::tie( rhv.afi, rhv.data, rhv.nlri_len );
+}
+
+bool operator==( const NLRI &lhv,const NLRI &rhv ) {
+    return std::tie( lhv.afi, lhv.data, lhv.nlri_len ) == std::tie( rhv.afi, rhv.data, rhv.nlri_len );
+}
+
+bool operator!=( const NLRI &lhv,const NLRI &rhv ) {
+    return !( lhv == rhv );
+}
+
 std::vector<uint8_t> NLRI::serialize() const {
     std::vector<uint8_t> ret;
 
@@ -72,6 +84,12 @@ std::vector<uint8_t> NLRI::serialize() const {
     ret.insert( ret.end(), data.begin(), data.end() );
 
     return ret;
+}
+
+std::string NLRI::to_string() const {
+    std::stringstream ss;
+    ss << *this;
+    return ss.str();
 }
 
 std::ostream& operator<<( std::ostream &os, const NLRI &n ) {
@@ -82,7 +100,7 @@ std::ostream& operator<<( std::ostream &os, const NLRI &n ) {
         std::fill( address.begin(), address.end(), 0 );
         std::copy( n.data.begin(), n.data.end(), address.begin() );
         if( auto ret = inet_ntop( AF_INET, address.data(), buf, sizeof( buf ) ); ret != nullptr ) {
-            os << buf << "/" << n.nlri_len;
+            os << buf << "/" << static_cast<int>( n.nlri_len );
         } else {
             os << "Invalid Data";
         }
@@ -94,7 +112,7 @@ std::ostream& operator<<( std::ostream &os, const NLRI &n ) {
         std::fill( address.begin(), address.end(), 0 );
         std::copy( n.data.begin(), n.data.end(), address.begin() );
         if( auto ret = inet_ntop( AF_INET6, address.data(), buf, sizeof( buf ) ); ret != nullptr ) {
-            os << buf << "/" << n.nlri_len;
+            os << buf << "/" << static_cast<int>( n.nlri_len );
         } else {
             os << "Invalid Data";
         }
@@ -105,7 +123,7 @@ std::ostream& operator<<( std::ostream &os, const NLRI &n ) {
         for( auto const &b : n.data ) {
             os << static_cast<int>( b ) << ":"; 
         }
-        os << "\b" << "/" << n.nlri_len;
+        os << "\b" << "/" << static_cast<int>( n.nlri_len );
     }
     return os;
 }

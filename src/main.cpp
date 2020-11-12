@@ -1,12 +1,10 @@
 #include <iostream>
 #include <fstream>
-#include <boost/asio/ip/network_v4.hpp>
+#include <boost/asio/ip/address_v4.hpp>
 #include <yaml-cpp/yaml.h>
 #include <boost/program_options.hpp>
 
 using address_v4 = boost::asio::ip::address_v4;
-using prefix_v4 = boost::asio::ip::network_v4;
-using nlri = prefix_v4;
 
 #include "main.hpp"
 #include "config.hpp"
@@ -37,10 +35,10 @@ static void config_init( const std::string &path ) {
     new_conf.neighbours.emplace_back( bgp1 );
 
     OrigEntry orig;
-    orig.prefix = boost::asio::ip::make_network_v4( "1.2.3.4/32" );
+    orig.prefix = NLRI( BGP_AFI::IPv4, "1.2.3.4/32" );
     new_conf.originate_routes.push_back( orig );
 
-    orig.prefix = boost::asio::ip::make_network_v4( "6.6.6.6/32" );
+    orig.prefix = NLRI( BGP_AFI::IPv4, "6.6.6.6/32" );
     orig.policy_name.emplace( "route_policy1.yaml" );
     new_conf.originate_routes.push_back( orig );
 
@@ -51,12 +49,6 @@ static void config_init( const std::string &path ) {
 }
 
 int main( int argc, char *argv[] ) {
-    NLRI n1 { BGP_AFI::IPv4, "127.0.0.1/8" };
-    std::cout << n1 << std::endl;
-
-    NLRI n2 { BGP_AFI::IPv6, "2001:0db8:0000:0000:0000:ff00:0042:8329/64" };
-    std::cout << n2 << std::endl;
-
     std::string unix_socket_path { "/var/run/bgp++.sock" };
     std::string config_path { "config.yaml" };
 

@@ -2,6 +2,7 @@
 #define CONFIG_HPP_
 
 #include <list>
+#include "nlri.hpp"
 
 struct bgp_neighbour_v4 {
     uint32_t remote_as;
@@ -11,7 +12,7 @@ struct bgp_neighbour_v4 {
 
 struct RoutePolicy {
     // match
-    std::optional<prefix_v4> match_prefix_v4;
+    std::optional<NLRI> match_prefix_v4;
     std::optional<address_v4> match_nexthop;
     std::optional<uint32_t> match_localpref;
 
@@ -21,7 +22,7 @@ struct RoutePolicy {
 };
 
 struct OrigEntry {
-    prefix_v4 prefix;
+    NLRI prefix;
     std::optional<std::string> policy_name;
 };
 

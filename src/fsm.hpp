@@ -14,12 +14,11 @@ using error_code = boost::system::error_code;
 using timer = boost::asio::steady_timer;
 using stream_descriptor = boost::asio::posix::stream_descriptor;
 
-using nlri = prefix_v4;
-
 struct bgp_neighbour_v4;
 struct GlobalConf;
 struct bgp_packet;
 struct bgp_cap_t;
+class NLRI;
 enum class BGP_CAP_CODE : uint8_t;
 enum class BGP_ERR_CODE : uint8_t;
 enum class BGP_MSG_HDR_ERR : uint8_t;
@@ -79,7 +78,7 @@ struct bgp_fsm : public std::enable_shared_from_this<bgp_fsm> {
     void tx_keepalive();
 
     void rx_update( bgp_packet &pkt );
-    void tx_update( const std::vector<nlri> &prefixes, std::shared_ptr<std::vector<path_attr_t>> path, const std::vector<nlri> &withdrawn );
+    void tx_update( const std::vector<NLRI> &prefixes, std::shared_ptr<std::vector<path_attr_t>> path, const std::vector<NLRI> &withdrawn );
 
     void rx_notification( bgp_packet &pkt );
     void tx_notification( BGP_ERR_CODE code, BGP_MSG_HDR_ERR err, const std::vector<uint8_t> &data );

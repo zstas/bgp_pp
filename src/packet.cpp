@@ -1,12 +1,12 @@
 #include <vector>
-#include <boost/asio/ip/network_v4.hpp>
 #include <boost/asio/ip/address.hpp>
+#include <boost/asio/ip/address_v4.hpp>
 
 using address_v4 = boost::asio::ip::address_v4;
-using prefix_v4 = boost::asio::ip::network_v4;
 
 #include "packet.hpp"
 #include "log.hpp"
+#include "nlri.hpp"
 #include "string_utils.hpp"
 
 extern Logger logger;
@@ -199,8 +199,8 @@ uint8_t* bgp_packet::get_body() {
     return reinterpret_cast<uint8_t*>( data + sizeof( bgp_header ) );
 }
 
-std::tuple<std::vector<nlri>,std::vector<path_attr_t>,std::vector<nlri>> bgp_packet::process_update( bool four_byte_asn ) {
-    std::vector<nlri> withdrawn_routes;
+std::tuple<std::vector<NLRI>,std::vector<path_attr_t>,std::vector<NLRI>> bgp_packet::process_update( bool four_byte_asn ) {
+    std::vector<NLRI> withdrawn_routes;
     auto header = get_header();
     auto update_data = data + sizeof( bgp_header );
     auto update_len = header->length.native() - sizeof( bgp_header );
@@ -230,10 +230,7 @@ std::tuple<std::vector<nlri>,std::vector<path_attr_t>,std::vector<nlri>> bgp_pac
         }
         len -= bytes;
 
-        uint32_t address = 0;
-        std::memcpy( &address, update_data + offset + 1, bytes );
-        withdrawn_routes.emplace_back( address_v4 { bswap( address ) }, nlri_len );
-
+        withdrawn_routes.emplace_back( BGP_AFI::IPv4, update_data + offset + 1, nlri_len );
         offset += sizeof( nlri_len ) + bytes;
     }
 
@@ -260,7 +257,7 @@ std::tuple<std::vector<nlri>,std::vector<path_attr_t>,std::vector<nlri>> bgp_pac
     // parsing NLRI
     len = update_len - offset;
     logger.logInfo() << LOGS::PACKET << "Length of NLRI: " << len << std::endl;
-    std::vector<nlri> routes;
+    std::vector<NLRI> routes;
     while( len > 0 ) {
         if( offset >= update_len ) {
             logger.logError() << LOGS::PACKET << "Error on parsing message" << std::endl;
@@ -281,10 +278,7 @@ std::tuple<std::vector<nlri>,std::vector<path_attr_t>,std::vector<nlri>> bgp_pac
         }
         len -= bytes;
 
-        uint32_t address = 0;
-        std::memcpy( &address, update_data + offset + 1, bytes );
-        routes.emplace_back( address_v4 { bswap( address ) }, nlri_len );
-        
+        routes.emplace_back( BGP_AFI::IPv4, update_data + offset + 1, nlri_len );
         offset += sizeof( nlri_len ) + bytes;
     }
 
@@ -315,11 +309,12 @@ void path_attr_t::make_origin( ORIGIN o ) {
     bytes.push_back( static_cast<uint8_t>( o ) );
 }
 
-void path_attr_t::make_nexthop( const address_v4 &a ) {
+void path_attr_t::make_nexthop( const NLRI &a ) {
     transitive = 1;
     bytes.clear();
     type = PATH_ATTRIBUTE::NEXT_HOP;
-    auto temp = a.to_bytes();
+    auto temp = a.serialize();
+    temp.erase( temp.begin() );
     bytes = { temp.begin(), temp.end() };
 }
 

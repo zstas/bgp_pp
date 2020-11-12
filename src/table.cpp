@@ -1,10 +1,8 @@
-#include <boost/asio/ip/network_v4.hpp>
+#include <boost/asio/ip/address_v4.hpp>
 #include <map>
 #include <chrono>
 
 using address_v4 = boost::asio::ip::address_v4;
-using prefix_v4 = boost::asio::ip::network_v4;
-using nlri = prefix_v4;
 
 #include "table.hpp"
 #include "fsm.hpp"
@@ -13,6 +11,7 @@ using nlri = prefix_v4;
 #include "log.hpp"
 #include "string_utils.hpp"
 #include "evloop.hpp"
+#include "nlri.hpp"
 
 extern Logger logger;
 extern std::shared_ptr<EVLoop> runtime;
@@ -85,7 +84,7 @@ bgp_table_v4::bgp_table_v4( boost::asio::io_context &i, GlobalConf &c ):
     }
 }
 
-void bgp_table_v4::add_path( const prefix_v4 &prefix, std::vector<path_attr_t> attr, std::shared_ptr<bgp_fsm> nei ) {
+void bgp_table_v4::add_path( const NLRI &prefix, std::vector<path_attr_t> attr, std::shared_ptr<bgp_fsm> nei ) {
     scheduled_updates.emplace( prefix );
     schedule_updates();
     // Add local preference attribute, if it doesn't exist
@@ -118,7 +117,7 @@ void bgp_table_v4::add_path( const prefix_v4 &prefix, std::vector<path_attr_t> a
     auto pathIt = std::find_if( 
         table.begin(), 
         table.end(), 
-        [ &attr ]( const std::pair<prefix_v4,bgp_path> &pair ) -> bool {
+        [ &attr ]( const std::pair<NLRI,bgp_path> &pair ) -> bool {
             return *pair.second.attrs == attr;
         }
     );
@@ -136,7 +135,7 @@ void bgp_table_v4::add_path( const prefix_v4 &prefix, std::vector<path_attr_t> a
     best_path_selection( prefix );
 }
 
-void bgp_table_v4::del_path( const prefix_v4 &prefix, std::shared_ptr<bgp_fsm> nei ) {
+void bgp_table_v4::del_path( const NLRI &prefix, std::shared_ptr<bgp_fsm> nei ) {
     scheduled_updates.emplace( prefix );
     schedule_updates();
     for( auto prefixIt = table.find( prefix ); prefixIt != table.end(); prefixIt++ ) {
@@ -150,8 +149,8 @@ void bgp_table_v4::del_path( const prefix_v4 &prefix, std::shared_ptr<bgp_fsm> n
 }
 
 void bgp_table_v4::best_path_selection() {
-    prefix_v4 current_prefix;
-    std::multimap<prefix_v4,bgp_path>::iterator best = table.end();
+    NLRI current_prefix;
+    std::multimap<NLRI,bgp_path>::iterator best = table.end();
 
     for( auto currentIt = table.begin(); currentIt != table.end(); currentIt++ ) {
         auto const &prefix = currentIt->first;
@@ -215,9 +214,9 @@ void bgp_table_v4::best_path_selection() {
     }
 }
 
-void bgp_table_v4::best_path_selection( const prefix_v4 &prefix ) {
+void bgp_table_v4::best_path_selection( const NLRI &prefix ) {
     auto range = table.equal_range( prefix );
-    std::multimap<prefix_v4,bgp_path>::iterator best = range.first;
+    std::multimap<NLRI,bgp_path>::iterator best = range.first;
 
     for( auto it = range.first; it != range.second; it++ ) {
         auto &path = it->second;
@@ -283,8 +282,8 @@ void bgp_table_v4::on_send_updates( const boost::system::error_code &ec ) {
     if( ec ) {
         logger.logError() << LOGS::EVENT_LOOP << "On timer for sending updates: " << ec.message() << std::endl;
     }
-    std::vector<nlri> withdrawn_update;
-    std::map<std::shared_ptr<std::vector<path_attr_t>>,std::vector<nlri>> pending_update;
+    std::vector<NLRI> withdrawn_update;
+    std::map<std::shared_ptr<std::vector<path_attr_t>>,std::vector<NLRI>> pending_update;
     for( auto const &n: scheduled_updates ) {
         auto it = table.end();
         if( it = table.find( n ); it == table.end() ) {
@@ -294,7 +293,7 @@ void bgp_table_v4::on_send_updates( const boost::system::error_code &ec ) {
         if( auto updIt = pending_update.find( it->second.attrs ); updIt != pending_update.end() ) {
             updIt->second.push_back( n );
         } else {
-            std::vector<nlri> new_vec { n };
+            std::vector<NLRI> new_vec { n };
             pending_update.emplace( it->second.attrs, new_vec );
         }
     }

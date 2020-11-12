@@ -1,12 +1,11 @@
-#include <boost/asio/ip/network_v4.hpp>
+#include <boost/asio/ip/address_v4.hpp>
 
 using address_v4 = boost::asio::ip::address_v4;
-using prefix_v4 = boost::asio::ip::network_v4;
-using nlri = prefix_v4;
 
 #include "evloop.hpp"
 #include "log.hpp"
 #include "string_utils.hpp"
+#include "nlri.hpp"
 #include "config.hpp"
 #include "fsm.hpp"
 #include "packet.hpp"

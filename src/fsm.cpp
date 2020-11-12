@@ -2,13 +2,13 @@
 #include <vector>
 #include <tuple>
 #include <set>
-#include <boost/asio/ip/network_v4.hpp>
+#include <boost/asio/ip/address_v4.hpp>
 #include <boost/asio/posix/stream_descriptor.hpp>
 
 using address_v4 = boost::asio::ip::address_v4;
-using prefix_v4 = boost::asio::ip::network_v4;
 
 #include "fsm.hpp"
+#include "nlri.hpp"
 #include "config.hpp"
 #include "packet.hpp"
 #include "log.hpp"
@@ -175,7 +175,7 @@ void bgp_fsm::rx_keepalive( bgp_packet &pkt ) {
 }
 
 void bgp_fsm::rx_update( bgp_packet &pkt ) {
-    std::set<nlri> schedule;
+    std::set<NLRI> schedule;
     auto cap_it = std::find_if( caps.begin(), caps.end(), []( const bgp_cap_t &val ) -> bool { return val.code == BGP_CAP_CODE::FOUR_OCT_AS; } );
     auto four_byte_asn = ( cap_it != caps.end() );
     auto [ withdrawn_routes, path_attrs, routes ] = pkt.process_update( four_byte_asn );
@@ -269,7 +269,7 @@ void bgp_fsm::do_read() {
     sock->async_receive( boost::asio::buffer( buffer ), std::bind( &bgp_fsm::on_receive, shared_from_this(), std::placeholders::_1, std::placeholders::_2 ) );
 }
 
-void bgp_fsm::tx_update( const std::vector<nlri> &prefixes, std::shared_ptr<std::vector<path_attr_t>> path, const std::vector<nlri> &withdrawn ) {
+void bgp_fsm::tx_update( const std::vector<NLRI> &prefixes, std::shared_ptr<std::vector<path_attr_t>> path, const std::vector<NLRI> &withdrawn ) {
     logger.logInfo() << LOGS::FSM << "Sending UPDATE to peer: " << sock->remote_endpoint().address().to_string() << std::endl;
 
     auto new_path = *path;
@@ -325,18 +325,8 @@ void bgp_fsm::tx_update( const std::vector<nlri> &prefixes, std::shared_ptr<std:
     withdrawn_body.reserve( 1000 );
 
     for( auto const &w: withdrawn ) {
-        uint8_t nlri_len = w.prefix_length();
-        withdrawn_body.push_back( nlri_len );
-        auto pref = bswap( w.address().to_uint() );
-
-        auto bytes = nlri_len / 8;
-        if( nlri_len % 8 != 0 ) {
-            bytes++;
-        }
-        auto pref_data = reinterpret_cast<uint8_t*>( &pref );
-        for( int i = 0; i < bytes; i++ ) {
-            withdrawn_body.push_back( pref_data[ i ] );
-        }
+        auto wdata = w.serialize();
+        withdrawn_body.insert( withdrawn_body.end(), wdata.begin(), wdata.end() );
     }
 
     {
@@ -369,19 +359,8 @@ void bgp_fsm::tx_update( const std::vector<nlri> &prefixes, std::shared_ptr<std:
 
     for( auto const &p: prefixes ) {
         logger.logInfo() << LOGS::FSM << "Sending prefix: " << p.to_string() << std::endl;
-        uint8_t nlri_len = p.prefix_length();
-        uint32_t pref = bswap( p.address().to_uint() );
-
-        uint8_t bytes = nlri_len / 8;
-        if( nlri_len % 8 != 0 ) {
-            bytes++;
-        }
-        nlri_body.push_back( nlri_len );
-
-        auto pref_data = reinterpret_cast<uint8_t*>( &pref );
-        for( int i = 0; i < bytes; i++ ) {
-            nlri_body.push_back( pref_data[ i ] );
-        }
+        auto pdata = p.serialize();
+        nlri_body.insert( nlri_body.end(), pdata.begin(), pdata.end() );
     }
 
     std::vector<uint8_t> body { withdrawn_body.begin(), withdrawn_body.end() };
@@ -408,7 +387,7 @@ void bgp_fsm::tx_update( const std::vector<nlri> &prefixes, std::shared_ptr<std:
 }
 
 void bgp_fsm::send_all_prefixes() {
-    std::set<nlri> scheduled;
+    std::set<NLRI> scheduled;
     bool ibgp = ( gconf.my_as == conf.remote_as );
     for( auto const &[ prefix, path ] : table.table ) {
         if( path.source && path.source->conf.remote_as == gconf.my_as ) {
