@@ -15,9 +15,9 @@ extern Logger logger;
 EVLoop::EVLoop( boost::asio::io_context &i, GlobalConf &c ):
     io( i ),
     conf( c ),
-    accpt( io, endpoint( boost::asio::ip::tcp::v4(), c.listen_on_port ) ),
-    sock( io ),
-    table( io, c )
+    accpt( i, endpoint( boost::asio::ip::tcp::v4(), c.listen_on_port ) ),
+    sock( i ),
+    table( i, c )
 {
     for( auto &nei: c.neighbours ) {
         neighbours.emplace( nei.address, std::make_shared<bgp_fsm>( io, c, table, nei ) );

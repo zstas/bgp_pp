@@ -64,7 +64,7 @@ std::vector<uint32_t> bgp_path::get_as_path() const {
 bgp_table_v4::bgp_table_v4( boost::asio::io_context &i, GlobalConf &c ):
     io( i ),
     conf( c ),
-    send_updates( io )
+    send_updates( i )
 {
     for( auto &r: conf.originate_routes ) {
         std::vector<path_attr_t> attrs;
