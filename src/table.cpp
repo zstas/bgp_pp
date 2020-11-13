@@ -30,7 +30,7 @@ uint32_t bgp_path::get_local_pref() const {
             return el.get_u32();
         }
     }
-    throw std::runtime_error( "No such attribute" );
+    throw std::runtime_error( "No such attribute (LOCAL_PREF)" );
 }
 
 uint32_t bgp_path::get_med() const {
@@ -39,7 +39,7 @@ uint32_t bgp_path::get_med() const {
             return el.get_u32();
         }
     }
-    throw std::runtime_error( "No such attribute" );
+    throw std::runtime_error( "No such attribute (MED)" );
 }
 
 ORIGIN bgp_path::get_origin() const {
@@ -48,7 +48,7 @@ ORIGIN bgp_path::get_origin() const {
             return static_cast<ORIGIN>( el.get_u32() );
         }
     }
-    throw std::runtime_error( "No such attribute" );
+    throw std::runtime_error( "No such attribute (ORIGIN)" );
 }
 
 std::vector<uint32_t> bgp_path::get_as_path() const {
@@ -57,7 +57,7 @@ std::vector<uint32_t> bgp_path::get_as_path() const {
             return el.parse_as_path();
         }
     }
-    throw std::runtime_error( "No such attribute" );
+    throw std::runtime_error( "No such attribute (AS_PATH)" );
 }
 
 
@@ -274,12 +274,15 @@ void bgp_table_v4::purge_peer( std::shared_ptr<bgp_fsm> peer ) {
 }
 
 void bgp_table_v4::schedule_updates() {
-    send_updates.expires_from_now( std::chrono::seconds( 1 ) );
+    send_updates.expires_after( std::chrono::seconds( 1 ) );
     send_updates.async_wait( std::bind( &bgp_table_v4::on_send_updates, this, std::placeholders::_1 ) );
 }
 
 void bgp_table_v4::on_send_updates( const boost::system::error_code &ec ) {
     if( ec ) {
+        // supress operation canceled, because we could have multiple timer schedules
+        if( ec == boost::system::errc::operation_canceled )
+            return;
         logger.logError() << LOGS::EVENT_LOOP << "On timer for sending updates: " << ec.message() << std::endl;
     }
     std::vector<NLRI> withdrawn_update;
