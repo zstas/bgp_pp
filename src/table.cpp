@@ -256,7 +256,7 @@ void bgp_table_v4::best_path_selection( const NLRI &prefix ) {
         // TODO: other BPS conditionds
     }
 
-    if( best == table.end() ) {
+    if( best != table.end() ) {
         best->second.isBest = true;
     }
 }
