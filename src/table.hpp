@@ -26,6 +26,10 @@ struct bgp_path {
     uint32_t get_med() const;
     ORIGIN get_origin() const;
     std::vector<uint32_t> get_as_path() const;
+    address_v4 get_nexthop_v4() const;
+
+    void set_local_pref( uint32_t lp );
+    void set_nexthop_v4( address_v4 lp );
 };
 
 class bgp_table_v4 {

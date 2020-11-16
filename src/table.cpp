@@ -60,6 +60,39 @@ std::vector<uint32_t> bgp_path::get_as_path() const {
     throw std::runtime_error( "No such attribute (AS_PATH)" );
 }
 
+address_v4 bgp_path::get_nexthop_v4() const {
+    for( auto const &el: *attrs ) {
+        if( el.type == PATH_ATTRIBUTE::NEXT_HOP ) {
+            address_v4 ret { el.get_u32() };
+            return ret;
+        }
+    }
+    throw std::runtime_error( "No such attribute (NEXT_HOP)" );
+}
+
+void bgp_path::set_local_pref( uint32_t lp ) {
+    for( auto &el: *attrs ) {
+        if( el.type == PATH_ATTRIBUTE::LOCAL_PREF ) {
+            el.make_local_pref( lp );
+            return;
+        }
+    }
+    path_attr_t nlp;
+    nlp.make_local_pref( lp );
+    attrs->push_back( std::move( nlp ) );
+}
+
+void bgp_path::set_nexthop_v4( address_v4 nh ) {
+    for( auto &el: *attrs ) {
+        if( el.type == PATH_ATTRIBUTE::NEXT_HOP ) {
+            el.make_nexthop( nh );
+            return;
+        }
+    }
+    path_attr_t nnh;
+    nnh.make_nexthop( nh );
+    attrs->push_back( std::move( nnh ) );
+}
 
 bgp_table_v4::bgp_table_v4( boost::asio::io_context &i, GlobalConf &c ):
     io( i ),

@@ -330,6 +330,13 @@ void path_attr_t::make_nexthop( const boost::asio::ip::address &a ) {
     }
 }
 
+void path_attr_t::make_nexthop( const address_v4 &a ) {
+    bytes.clear();
+    type = PATH_ATTRIBUTE::NEXT_HOP;
+    auto temp = a.to_bytes();
+    bytes = { temp.begin(), temp.end() };
+}
+
 void path_attr_t::make_as_path( std::vector<uint32_t> aspath ) {
     bytes.clear();
     type = PATH_ATTRIBUTE::AS_PATH;
