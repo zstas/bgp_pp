@@ -1,6 +1,7 @@
 #include <boost/asio/ip/address_v4.hpp>
 #include <map>
 #include <chrono>
+#include <yaml-cpp/yaml.h>
 
 using address_v4 = boost::asio::ip::address_v4;
 
@@ -12,6 +13,8 @@ using address_v4 = boost::asio::ip::address_v4;
 #include "string_utils.hpp"
 #include "evloop.hpp"
 #include "nlri.hpp"
+#include "route_policy.hpp"
+#include "yaml.hpp"
 
 extern Logger logger;
 extern std::shared_ptr<EVLoop> runtime;
@@ -112,8 +115,20 @@ bgp_table_v4::bgp_table_v4( boost::asio::io_context &i, GlobalConf &c ):
         attr.make_nexthop( boost::asio::ip::make_address_v4( "0.0.0.0" ) );
         attrs.push_back( attr );
 
-        // TODO: route policy
-        add_path( r.prefix, attrs, nullptr );
+        if( r.policy_name ) {
+            RoutePolicy pol;
+            try {
+                YAML::Node file = YAML::LoadFile( *r.policy_name );
+                pol = file.as<RoutePolicy>();
+            } catch( std::exception &e ) {
+                logger.logError() << LOGS::TABLE << "Cannot load route policy " << r.policy_name.value() << ": " << e.what() << std::endl;
+            }
+            if( routePolicyProcess( pol, r.prefix, attrs ) ) {
+                add_path( r.prefix, attrs, nullptr );
+            }
+        } else {
+            add_path( r.prefix, attrs, nullptr );
+        }
     }
 }
 

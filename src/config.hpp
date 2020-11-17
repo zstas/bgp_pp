@@ -34,6 +34,7 @@ struct GlobalConf {
 
     std::list<bgp_neighbour_v4> neighbours;
     std::list<OrigEntry> originate_routes;
+    std::map<std::string,RoutePolicy> policies;
 };
 
 #endif

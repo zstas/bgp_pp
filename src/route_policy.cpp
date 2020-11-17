@@ -9,7 +9,7 @@ using address_v4 = boost::asio::ip::address_v4;
 #include "config.hpp"
 #include "table.hpp"
 
-bool routePolicyProcess( RoutePolicy &pol, NLRI &nlri, bgp_path &path ) {
+bool routePolicyProcess( RoutePolicy &pol, NLRI &nlri, std::vector<path_attr_t> &attrs ) {
     if( pol.match_prefix_v4 ) {
         try {
             if( nlri != *pol.match_prefix_v4 ) {
@@ -19,29 +19,23 @@ bool routePolicyProcess( RoutePolicy &pol, NLRI &nlri, bgp_path &path ) {
             return false;
         }
     }
-    if( pol.match_nexthop ) {
-        try {
-            if( path.get_nexthop_v4() != *pol.match_nexthop ) {
+    for( auto &attr: attrs ) {
+        if( attr.type == PATH_ATTRIBUTE::NEXT_HOP && pol.match_nexthop ) {
+            if( attr.get_u32() != pol.match_nexthop->to_uint() ) {
                 return false;
             }
-        } catch( std::exception &e ) {
-            return false;
         }
-    }
-    if( pol.match_localpref ) {
-        try {
-            if( path.get_local_pref() != *pol.match_localpref ) {
+        if( attr.type == PATH_ATTRIBUTE::LOCAL_PREF && pol.match_localpref ) {
+            if( attr.get_u32() != *pol.match_localpref ) {
                 return false;
             }
-        } catch( std::exception &e ) {
-            return false;
         }
-    }
-    if( pol.set_localpref ) {
-        path.set_local_pref( *pol.set_localpref );
-    }
-    if( pol.set_nexthop ) {
-        path.set_nexthop_v4( *pol.set_nexthop );
+        if( attr.type == PATH_ATTRIBUTE::LOCAL_PREF && pol.set_localpref ) {
+            attr.make_local_pref( *pol.set_localpref );
+        }
+        if( attr.type == PATH_ATTRIBUTE::NEXT_HOP && pol.set_nexthop ) {
+            attr.make_nexthop( *pol.set_nexthop );
+        }
     }
     return true;
 }

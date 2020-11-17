@@ -42,10 +42,22 @@ static void config_init( const std::string &path ) {
     orig.policy_name.emplace( "route_policy1.yaml" );
     new_conf.originate_routes.push_back( orig );
 
-    YAML::Node node;
-    node = new_conf;
-    std::ofstream fout( path );
-    fout << node << std::endl;
+    {
+        YAML::Node node;
+        node = new_conf;
+        std::ofstream fout( path );
+        fout << node << std::endl;
+    }
+
+    RoutePolicy pol1;
+    pol1.match_prefix_v4.emplace( BGP_AFI::IPv4, "1.2.3.4/32" );
+    pol1.set_localpref.emplace( 250 );
+    {
+        YAML::Node node;
+        node = pol1;
+        std::ofstream fout( "route_policy1.yaml" );
+        fout << node << std::endl;
+    }
 }
 
 int main( int argc, char *argv[] ) {
@@ -67,14 +79,18 @@ int main( int argc, char *argv[] ) {
 
     if( vm.count( "help" ) ) {
         std::cout << desc << std::endl;
+        return 0;
     }
 
     if( vm.count( "version" ) ) {
         std::cout << "Version: 1.2.3" << std::endl;
+        return 0;
     }
 
     if( vm.count( "gen_conf" ) ) {
-        config_init( config_path );    
+        config_init( config_path );
+        std::cout << "Config generated" << std::endl;
+        return 0;
     }
 
     GlobalConf conf;
