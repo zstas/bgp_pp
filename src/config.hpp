@@ -10,7 +10,13 @@ struct bgp_neighbour_v4 {
     std::optional<uint16_t> hold_time;
 };
 
-struct RoutePolicy {
+enum RoutePolicyAction: uint8_t {
+    ACCEPT,
+    DROP,
+    PASS
+};
+
+struct RoutePolicyEntry {
     // match
     std::optional<NLRI> match_prefix_v4;
     std::optional<address_v4> match_nexthop;
@@ -19,6 +25,11 @@ struct RoutePolicy {
     // action
     std::optional<address_v4> set_nexthop;
     std::optional<uint32_t> set_localpref;
+    RoutePolicyAction action;
+};
+
+struct RoutePolicy {
+    std::list<RoutePolicyEntry> entries;
 };
 
 struct OrigEntry {

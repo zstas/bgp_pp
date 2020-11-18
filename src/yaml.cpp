@@ -47,9 +47,20 @@ bool YAML::convert<bgp_neighbour_v4>::decode(const YAML::Node& node, bgp_neighbo
         rhs.hold_time       = node[ "hold_time" ].as<uint16_t>();
     }
     return true;
-} 
+}
 
 YAML::Node YAML::convert<RoutePolicy>::encode(const RoutePolicy& rhs) {
+    Node node;
+    node[ "entries" ] = rhs.entries;
+    return node;
+}
+
+bool YAML::convert<RoutePolicy>::decode(const YAML::Node& node, RoutePolicy& rhs) {
+    rhs.entries = node[ "entries" ].as<std::list<RoutePolicyEntry>>();
+    return node;
+}
+
+YAML::Node YAML::convert<RoutePolicyEntry>::encode(const RoutePolicyEntry& rhs) {
     Node node;
     if( rhs.match_prefix_v4.has_value() ) {
         node[ "match_prefix_v4" ] = rhs.match_prefix_v4.value().to_string();
@@ -66,10 +77,12 @@ YAML::Node YAML::convert<RoutePolicy>::encode(const RoutePolicy& rhs) {
     if( rhs.set_localpref.has_value() ) {
         node[ "set_localpref" ] = rhs.set_localpref.value();
     }
+    node[ "action" ] = rhs.action;
     return node;
 }
 
-bool YAML::convert<RoutePolicy>::decode(const YAML::Node& node, RoutePolicy& rhs) {
+bool YAML::convert<RoutePolicyEntry>::decode(const YAML::Node& node, RoutePolicyEntry& rhs) {
+    rhs.action = node[ "action" ].as<RoutePolicyAction>();
     if( node[ "match_prefix_v4"].IsDefined() ) {
         rhs.match_prefix_v4.emplace( BGP_AFI::IPv4, node[ "match_prefix_v4" ].as<std::string>() );
     }
@@ -101,6 +114,33 @@ bool YAML::convert<OrigEntry>::decode(const YAML::Node& node, OrigEntry& rhs) {
     rhs.prefix = NLRI( BGP_AFI::IPv4, node[ "prefix" ].as<std::string>() );
     if( node[ "policy_name"].IsDefined() ) {
         rhs.policy_name.emplace( node[ "policy_name" ].as<std::string>() );
+    }
+    return true;
+} 
+
+YAML::Node YAML::convert<RoutePolicyAction>::encode(const RoutePolicyAction& rhs) {
+    Node node;
+    switch( rhs ) {
+    case RoutePolicyAction::ACCEPT:
+        node = "accept";
+        break;
+    case RoutePolicyAction::DROP:
+        node = "drop";
+        break;
+    case RoutePolicyAction::PASS:
+        node = "pass";
+        break;
+    }
+    return node;
+}
+
+bool YAML::convert<RoutePolicyAction>::decode(const YAML::Node& node, RoutePolicyAction& rhs) {
+    if( node.as<std::string>() == "accept" ) {
+        rhs = RoutePolicyAction::ACCEPT;
+    } else if( node.as<std::string>() == "drop" ) {
+        rhs = RoutePolicyAction::DROP;
+    } else if( node.as<std::string>() == "pass" ) {
+        rhs = RoutePolicyAction::PASS;
     }
     return true;
 } 

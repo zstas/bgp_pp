@@ -4,6 +4,8 @@
 struct GlobalConf;
 struct bgp_neighbour_v4;
 struct RoutePolicy;
+struct RoutePolicyEntry;
+enum RoutePolicyAction: uint8_t;
 struct OrigEntry;
 
 namespace YAML {
@@ -23,6 +25,18 @@ namespace YAML {
     struct convert<RoutePolicy> {
         static Node encode( const RoutePolicy &rhs );
         static bool decode( const Node &node, RoutePolicy &rhs );
+    };
+
+    template<>
+    struct convert<RoutePolicyEntry> {
+        static Node encode( const RoutePolicyEntry &rhs );
+        static bool decode( const Node &node, RoutePolicyEntry &rhs );
+    };
+
+    template<>
+    struct convert<RoutePolicyAction> {
+        static Node encode( const RoutePolicyAction &rhs );
+        static bool decode( const Node &node, RoutePolicyAction &rhs );
     };
 
     template<>

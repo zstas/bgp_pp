@@ -50,8 +50,10 @@ static void config_init( const std::string &path ) {
     }
 
     RoutePolicy pol1;
-    pol1.match_prefix_v4.emplace( BGP_AFI::IPv4, "1.2.3.4/32" );
-    pol1.set_localpref.emplace( 250 );
+    RoutePolicyEntry pol_entry;
+    pol_entry.match_prefix_v4.emplace( BGP_AFI::IPv4, "1.2.3.4/32" );
+    pol_entry.set_localpref.emplace( 250 );
+    pol1.entries.emplace_back( pol_entry );
     {
         YAML::Node node;
         node = pol1;
